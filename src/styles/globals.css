@@ -66,3 +66,11 @@ a{color:inherit} .plain{text-decoration:none}.muted{color:var(--muted)}.max{max-
 .selected-comps-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem}
 .selected-comps-row span{border:1px solid rgba(79,255,176,.28);background:rgba(79,255,176,.10);color:#d8fff0;border-radius:999px;padding:.5rem .75rem;font-weight:800;font-size:.86rem}
 .big-text{width:100%;min-height:180px;margin-top:1rem;border-radius:18px;padding:1rem;line-height:1.55}
+ 
+/* GLA Study + Concessions + Workfile additions */
+.line-chart{height:160px;display:flex;align-items:end;gap:4px;margin:1rem 0}
+.line-chart i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--cyan),rgba(77,225,255,.05));min-height:8px;cursor:pointer;transition:opacity .2s}
+.line-chart i:hover{opacity:.75}
+.net-result{padding:1.2rem;text-align:right;font-size:1rem;color:var(--muted);border-top:1px solid var(--line);margin-top:1rem}
+.net-result strong{font-size:2rem;color:var(--gold);display:block;margin-top:.25rem}
+ 
