@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Estate Market Analysis Suite | Professional v15</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<header class="hdr">
+  <section class="site-hero">
+    <div>
+      <div class="hero-eyebrow">Professional Launch Edition · Appraiser + Agent market-analysis workflow</div>
+      <h1>MLS-powered market analysis, <span>from comp support to client-ready talking points.</span></h1>
+      <p class="hero-lede">A premium market-analysis and workfile-support suite built for appraisers who need defensible support and real estate professionals who need clearer pricing conversations.</p>
+      <div class="hero-proof">
+        <span>MLS CSV import</span><span>Market trend extraction</span><span>GLA regression</span><span>Q/C calibration</span><span>Editable narratives</span><span>Workfile exports</span>
+      </div>
+      <div class="mode-switch" aria-label="Choose buyer mode">
+        <button class="mode-btn active" id="mode-appraiser" onclick="setBuyerMode('appraiser')">Appraiser Mode</button>
+        <button class="mode-btn" id="mode-agent" onclick="setBuyerMode('agent')">Agent / Broker Mode</button>
+      </div>
+      <div class="hero-cta">
+        <button class="btn btn-gold" onclick="loadDemoData()">Load Demo Data</button>
+        <button class="btn" onclick="document.getElementById('subject').scrollIntoView({behavior:'smooth',block:'start'})">Start Blank Workflow</button>
+        <button class="btn btn-outline" onclick="showPanel('refs', document.querySelector(`[onclick*=\'refs\']`)); document.getElementById('refs').scrollIntoView({behavior:'smooth',block:'start'})">View Methodology</button>
+      </div>
+    </div>
+    <aside class="hero-card launch-score-card" aria-label="Launch readiness snapshot">
+      <div class="hero-score"><strong>96</strong><span>launch-readiness framework</span></div>
+      <div class="launch-meter"><span></span></div>
+      <h3>Built for professional trust and buyer clarity.</h3>
+      <p>Positioned as market-analysis support, not an appraisal replacement. The workflow separates evidence, judgment, and client-ready language.</p>
+      <div class="score-list">
+        <div><b>Appraiser value</b><span>Workfile support + methods</span></div>
+        <div><b>Agent value</b><span>Pricing conversations + net facts</span></div>
+        <div><b>Demo value</b><span>One-click sample dataset</span></div>
+        <div><b>Trust value</b><span>Editable narratives + disclaimers</span></div>
+      </div>
+    </aside>
+  </section>
+</header>
+
+
+<div class="print-modal-backdrop" id="print-modal">
+  <div class="print-modal">
+    <h3>Print / Save Work File PDF</h3>
+    <p>This creates a clean work-file report from the data and analyses currently in this tool. In the print window, choose <strong>Save as PDF</strong> to store it in the assignment work file.</p>
+    <div class="print-checks">
+      <label><input type="checkbox" id="pf-subject" checked> Subject property summary</label>
+      <label><input type="checkbox" id="pf-market" checked> Market conditions study</label>
+      <label><input type="checkbox" id="pf-gla" checked> GLA study / indication</label>
+      <label><input type="checkbox" id="pf-qc" checked> Q/C calibration support</label>
+      <label><input type="checkbox" id="pf-adjustments" checked> Adjustment grid / reconciliation</label>
+      <label><input type="checkbox" id="pf-data" checked> Data quality and comp summary</label>
+      <label><input type="checkbox" id="pf-narrative" checked> Report narrative language</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="printWorkfileReport()">Open Print / Save PDF</button>
+      <button class="btn btn-outline" onclick="closeWorkfilePrintDialog()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+<section class="commercial-strip">
+  <div class="commercial-tile"><div class="k">Positioning</div><div class="v">Market-analysis support</div><p>Clear evidence, cleaner workfiles, and stronger pricing conversations without claiming to replace judgment.</p></div>
+  <div class="commercial-tile"><div class="k">Appraiser buyer</div><div class="v">Defensible support</div><p>Comp ranking, market time, GLA, Q/C support, concessions, and editable addendum language.</p></div>
+  <div class="commercial-tile"><div class="k">Agent buyer</div><div class="v">Better listing conversations</div><p>Explain comps, seller credits, net price indicators, and market movement in plain language.</p></div>
+  <div class="commercial-tile"><div class="k">Demo promise</div><div class="v">Useful in minutes</div><p>Load sample data, show the workflow, generate talking points, and print/export a workfile.</p></div>
+</section>
+<section class="trust-ribbon">
+  <div><strong>Professional-use safeguard:</strong> <span>All calculations support professional judgment. Appraisers remain responsible for appraisal conclusions; agents and brokers should use outputs as pricing and market-analysis support, not as a formal appraisal.</span></div>
+  <div><strong>Suggested launch language:</strong> <span>“Appraisal-grade CMA intelligence for better pricing, stronger seller conversations, and cleaner workfiles.”</span></div>
+</section>
+<section class="demo-banner">
+  <div><h3>Demo-ready in one click</h3><p>Use the sample dataset to show the full value story: import, comp ranking, concessions facts, narratives, and workfile export.</p></div>
+  <button class="btn btn-gold" onclick="loadDemoData()">Load Demo Data</button>
+</section>
+<section class="sell-grid">
+  <div class="sell-card"><strong>For appraisers</strong><span>Creates organized support for comp selection, adjustments, market movement, concessions, Q/C discussion, and report language.</span></div>
+  <div class="sell-card"><strong>For agents and brokers</strong><span>Turns MLS exports into clear buyer/seller talking points, listing support, and net-price explanation without calling it an appraisal.</span></div>
+  <div class="sell-card"><strong>For buyers of the software</strong><span>The workflow saves time, improves confidence, and produces a cleaner deliverable than a spreadsheet or basic CMA.</span></div>
+</section>
+
+<div class="app-shell">
+<aside class="workflow-sidebar">
+  <div class="workflow-sidebar-head">
+    <div class="eyebrow">Guided Workflow</div>
+    <h3>Build the workfile step by step</h3>
+    <p>Move through the assignment in order, then use the Workfile Center when you are ready to save or print.</p>
+  </div>
+  <nav class="workflow-nav nav-tabs">
+    <button class="ntab active" data-step="1" onclick="showPanel('subject',this)"><span>1</span> Subject</button>
+    <button class="ntab" data-step="2" onclick="showPanel('import',this)"><span>2</span> MLS Import <em class="data-badge" id="badge-import">0</em></button>
+    <button class="ntab" data-step="3" onclick="showPanel('qc',this)"><span>3</span> Q &amp; C</button>
+    <button class="ntab" data-step="4" onclick="showPanel('market-time',this)"><span>4</span> Market Time</button>
+    <button class="ntab" data-step="5" onclick="showPanel('gla',this)"><span>5</span> GLA Study</button>
+    <button class="ntab" data-step="6" onclick="showPanel('ranking',this)"><span>6</span> Comp Ranking <em class="data-badge" id="badge-rank">0</em></button>
+    <button class="ntab" data-step="7" onclick="showPanel('concessions',this)"><span>7</span> Seller Concessions</button>
+    <button class="ntab" data-step="8" onclick="showPanel('site-value',this)"><span>8</span> Site / Land Value</button>
+    <button class="ntab" data-step="9" onclick="showPanel('narrative',this)"><span>9</span> Narrative</button>
+    <button class="ntab" data-step="10" onclick="showPanel('adjustments',this)"><span>10</span> Adjustment Grid</button>
+    <button class="ntab" data-step="11" onclick="showPanel('quality',this)"><span>11</span> Data Quality</button>
+    <div class="nav-divider"></div>
+    <button class="ntab ntab-utility" onclick="showPanel('storage',this)"><span>★</span> Workfile Center</button>
+    <button class="ntab ntab-utility" onclick="showPanel('refs',this)"><span>?</span> Methodology</button>
+  </nav>
+</aside>
+<div class="app-main">
+<section class="launch-guide" id="launch-guide">
+  <div class="guide-copy">
+    <div class="guide-kicker">Step-by-step real estate analysis workflow</div>
+    <h2 id="workflow-title">Start with the subject property</h2>
+    <p id="workflow-help">Enter the subject details first. The rest of the suite uses this profile to analyze market conditions, rank comparables, support adjustments, and build professional valuation exhibits.</p>
+  </div>
+  <div class="guide-actions">
+    <button class="btn btn-gold" onclick="openWorkfilePrintDialog()">Print Workfile PDF</button>
+    <button class="btn btn-outline" onclick="showPanel('storage', document.querySelector(`[onclick*=\'storage\']`))">Save / Export</button>
+    <button class="btn btn-outline btn-danger" onclick="restartWorkspace()">Restart / Clear All</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+  SUBJECT PROPERTY
+═══════════════════════════════════════ -->
+<div id="subject" class="panel active">
+<div class="card">
+  <div class="card-title">Subject Property Profile <span class="tag">Step 1</span></div>
+  <p class="card-desc">Enter the subject property details. This information drives comp ranking, market analysis, adjustment support, and client/report narrative generation.</p>
+
+  <div class="sec">Identification</div>
+  <div class="grid2">
+    <div class="fg"><label>Street Address</label><input type="text" id="s-addr" placeholder="123 Main Street"></div>
+    <div class="fg"><label>City, State, ZIP</label><input type="text" id="s-city" placeholder="Greenville, SC 29601"></div>
+    <div class="fg"><label>County</label><input type="text" id="s-county" placeholder="Greenville County"></div>
+    <div class="fg"><label>Analysis / Effective Date</label><input type="date" id="s-effdate"></div>
+  </div>
+
+  <div class="sec">Physical Characteristics</div>
+  <div class="grid2">
+    <div class="fg"><label>Gross Living Area (SF)</label><input type="number" id="s-gla" placeholder="1850"></div>
+    <div class="fg"><label>Site Area (SF)</label><input type="number" id="s-site" placeholder="9500"></div>
+    <div class="fg"><label>Year Built</label><input type="number" id="s-year" placeholder="1998"></div>
+    <div class="fg"><label>Bedrooms</label><input type="number" id="s-beds" placeholder="3"></div>
+    <div class="fg"><label>Full Baths</label><input type="number" id="s-baths" placeholder="2"></div>
+    <div class="fg"><label>Half Baths</label><input type="number" id="s-half" placeholder="1"></div>
+    <div class="fg"><label>Garage / Parking</label>
+      <select id="s-garage"><option value="">Select</option><option>None</option><option>1-Car Attached</option><option>2-Car Attached</option><option>3-Car Attached</option><option>1-Car Detached</option><option>2-Car Detached</option><option>Carport</option></select></div>
+    <div class="fg"><label>Basement</label>
+      <select id="s-basement"><option value="">Select</option><option>None</option><option>Partial Unfinished</option><option>Full Unfinished</option><option>Partial Finished</option><option>Full Finished</option></select></div>
+    <div class="fg"><label>Pool</label>
+      <select id="s-pool"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+    <div class="fg"><label>Fireplace(s)</label><input type="number" id="s-fp" placeholder="1"></div>
+  </div>
+
+  <div class="sec">UAD Ratings</div>
+  <div class="warn-block">
+    <strong>Note on Q &amp; C Ratings</strong>
+    FNMA UAD quality (Q1–Q6) and condition (C1–C6) ratings cannot be derived from a simple formula. For appraisal use, these ratings require appraiser judgment, inspection, and comparison to market norms. For agent or broker use, treat these fields as structured property-condition descriptors that help organize comp discussion; they are not a substitute for a formal appraisal inspection.
+  </div>
+  <div class="grid2">
+    <div class="fg"><label>Quality Rating (Q1–Q6)</label>
+      <select id="s-qual">
+        <option value="">Select</option>
+        <option value="Q1">Q1 — Unique/Custom, highest quality</option>
+        <option value="Q2">Q2 — Superior quality, exceptional craftsmanship</option>
+        <option value="Q3">Q3 — Good quality, some upgrades</option>
+        <option value="Q4">Q4 — Standard builder grade</option>
+        <option value="Q5">Q5 — Economy construction</option>
+        <option value="Q6">Q6 — Lowest quality, minimal standards</option>
+      </select></div>
+    <div class="fg"><label>Condition Rating (C1–C6)</label>
+      <select id="s-cond">
+        <option value="">Select</option>
+        <option value="C1">C1 — New, never occupied</option>
+        <option value="C2">C2 — No deferred maintenance, recently updated</option>
+        <option value="C3">C3 — Well maintained, limited updating needed</option>
+        <option value="C4">C4 — Minor deferred maintenance</option>
+        <option value="C5">C5 — Obvious deferred maintenance</option>
+        <option value="C6">C6 — Substantial damage or deferred maintenance</option>
+      </select></div>
+  </div>
+  <div class="grid2">
+    <div class="fg"><label>Opinion of Value ($)</label><input type="number" id="s-value" placeholder="295000"></div>
+    <div class="fg"><label>Prepared By / License or Team</label><input type="text" id="s-appraiser" placeholder="Jane Smith, Certified Appraiser / ABC Realty Team"></div>
+  </div>
+
+  <div class="btn-row" style="margin-top:8px;">
+    <button class="btn btn-gold" onclick="saveSubject()">Save Subject &amp; Geocode</button>
+    <button class="btn btn-outline" onclick="clearSubject()">Clear</button>
+  </div>
+  <div class="loading-bar" id="geo-loading">Geocoding address via OpenStreetMap Nominatim… please wait.</div>
+  <div id="subject-saved" style="display:none;margin-top:12px;">
+    <div class="info-block"><strong>Subject Saved</strong>Address geocoded and subject profile stored. Proceed to MLS Import to load comparables.</div>
+    <div id="map" style="display:none;"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  MLS IMPORT
+═══════════════════════════════════════ -->
+<div id="import" class="panel">
+<div class="card">
+  <div class="card-title">MLS Data Import <span class="tag">CSV Upload</span></div>
+  <p class="card-desc">Upload a CSV exported from your MLS. The tool will auto-detect common column names and let you remap any it misses. Required fields: sale price, sale date, GLA. Recommended: address, site size, year built, beds, baths, condition, quality.</p>
+
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()">
+    <div class="uz-icon">📂</div>
+    <p><strong>Click to upload</strong> or drag &amp; drop your MLS CSV export</p>
+    <p style="font-size:12px;margin-top:6px;">CSV format · Exported from any MLS system</p>
+    <input type="file" id="csv-file" accept=".csv" style="display:none;" onchange="handleCSV(this)">
+  </div>
+
+  <div id="col-mapper" style="display:none;">
+    <div class="sec">Column Mapping — Verify or Correct Auto-Detection</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">The tool detected these column mappings from your CSV headers. Adjust any that are incorrect using the dropdowns.</p>
+    <div id="col-map-rows"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-gold" onclick="applyMapping()">Import with This Mapping</button>
+      <button class="btn btn-outline" onclick="cancelImport()">Cancel</button>
+    </div>
+  </div>
+
+  <div id="import-summary" style="display:none;">
+    <div class="sec">Imported Sales</div>
+    <div class="stats-row" id="import-stats"></div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="import-table">
+        <thead id="import-thead"></thead>
+        <tbody id="import-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="import-pagination"></div>
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn btn-outline btn-sm btn-danger" onclick="clearImport()">Clear Imported Data</button>
+      <button class="btn btn-sm" onclick="geocodeAll()">Geocode All Addresses</button>
+    </div>
+    <div class="loading-bar" id="geo-all-loading">Geocoding addresses… this may take a moment (rate-limited to respect Nominatim policy).</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  COMP RANKING
+═══════════════════════════════════════ -->
+<div id="ranking" class="panel">
+<div class="card">
+  <div class="card-title">Comparable Sale Ranking <span class="tag">Weighted Similarity</span></div>
+  <p class="card-desc">Ranks imported sales by similarity to the subject property. Weights are adjustable — heavier weight on the factors most important in your market.</p>
+
+  <div class="cit">
+    <div class="cit-lbl">Methodology</div>
+    <p>Comp ranking uses a weighted proximity score across multiple property attributes. Each attribute is scored 0–100 based on how close the comp is to the subject, then multiplied by its weight. This produces a total similarity score (0–100). The method reflects standard appraisal selection criteria: recency, physical similarity, and locational comparability.</p>
+    <p class="cit-src">Consistent with USPAP Advisory Opinion 11 (selection of comparable sales); FNMA Selling Guide B4-1.3-08</p>
+  </div>
+
+  <div class="sec">Scoring Weights (must total 100)</div>
+  <div class="info-block"><strong>Distance Ranking</strong>Distance uses the geocoded subject and comp addresses. Save/geocode the subject and geocode imported sales for the strongest location-based ranking.</div>
+  <div class="grid3">
+    <div class="fg"><label>GLA Similarity</label><input type="number" id="w-gla" value="24" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Distance from Subject</label><input type="number" id="w-distance" value="18" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Sale Date (Recency)</label><input type="number" id="w-date" value="18" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Site Size</label><input type="number" id="w-site" value="10" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Year Built / Age</label><input type="number" id="w-year" value="8" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Garage Match</label><input type="number" id="w-garage" value="7" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Basement Match</label><input type="number" id="w-basement" value="5" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Pool Match</label><input type="number" id="w-pool" value="4" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Quality Match (Q)</label><input type="number" id="w-qual" value="3" min="0" max="100" oninput="updateWeightTotal()"></div>
+    <div class="fg"><label>Condition Match (C)</label><input type="number" id="w-cond" value="3" min="0" max="100" oninput="updateWeightTotal()"></div>
+  </div>
+  <div id="weight-total-display" style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Total: <strong id="weight-total">100</strong> / 100</div>
+
+  <div class="btn-row">
+    <button class="btn btn-gold" onclick="runRanking()">Rank Comparables</button>
+    <button class="btn btn-outline" onclick="resetWeights()">Reset Weights</button>
+  </div>
+
+  <div id="ranking-output" style="display:none;margin-top:20px;">
+    <div id="subject-summary-bar" class="sub-summary"></div>
+    <div class="sec">Ranked Comparables</div>
+    <div id="ranking-cards"></div>
+    <div id="ranking-map-wrap">
+      <div class="sec">Map — Subject &amp; Ranked Comps</div>
+      <div id="ranking-map" style="height:420px;border-radius:var(--rl);border:1px solid var(--border);"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  MARKET TIME
+═══════════════════════════════════════ -->
+<div id="market-time" class="panel">
+<div class="card">
+  <div class="card-title">Market Time / Trend Adjustment <span class="tag">Market-Derived</span></div>
+  <p class="card-desc">Analyze market time trends from imported MLS data or manually entered periods. The tool calculates monthly rate, annualized rate, and CAGR, and applies the adjustment to a specific comp.</p>
+
+  <div class="cit">
+    <div class="cit-lbl">Methodology</div>
+    <p>Market conditions adjustments must be market-derived. The preferred method uses median sale price trend analysis across rolling time periods. When MLS data is imported, the tool automatically calculates median prices by month for analysis. The adjustment rate is then applied on a per-month basis to each comp sale date.</p>
+    <p class="cit-src">FNMA Selling Guide B4-1.3-09; USPAP SR 1-4(a); Appraisal Institute "The Appraisal of Real Estate," 15th Ed., Ch. 15</p>
+  </div>
+
+  <div class="stabs">
+    <button class="stab active" onclick="showSub(this,'mt-from-data')">From Imported MLS Data</button>
+    <button class="stab" onclick="showSub(this,'mt-manual')">Manual Period Entry</button>
+    <button class="stab" onclick="showSub(this,'mt-apply')">Apply Adjustment</button>
+  </div>
+
+  <div id="mt-from-data" class="spanel active">
+    <div class="info-block"><strong>Auto-Analysis from MLS Import</strong>When you import MLS data with sale dates and sale prices, click below to automatically calculate median prices by month and extract the trend rate.</div>
+    <div class="grid2" style="margin-top:14px;">
+      <div class="fg"><label>Base Grouping</label>
+        <select id="mt-groupby"><option value="month">Monthly</option><option value="quarter">Quarterly</option></select></div>
+      <div class="fg"><label>Minimum Sales Per Period (exclude thin periods)</label>
+        <input type="number" id="mt-min-sales" value="3" min="1"></div>
+      <div class="fg"><label>Smoothing / Limited Data Modifier</label>
+        <select id="mt-smoothing" onchange="updateMTSmoothingHelp()">
+          <option value="none">Off — show raw period medians</option>
+          <option value="rolling3" selected>Rolling 3-month median — smooth monthly noise</option>
+          <option value="quarterly_avg">Quarterly modifier — convert monthly data to quarters</option>
+          <option value="weighted_regression">Weighted trend line — give thin months less influence</option>
+        </select></div>
+      <div class="fg"><label>Chart Display</label>
+        <select id="mt-chart-mode"><option value="both">Raw + modified trend</option><option value="raw">Raw only</option><option value="smooth">Modified only</option></select></div>
+    </div>
+    <div class="info-block" id="mt-smoothing-help"><strong>Limited Data Modifier</strong>Rolling 3-month median uses each month plus the prior and following month to reduce sharp swings caused by low sale counts. It does not create new market evidence; it only smooths the visual trend and rate extraction.</div>
+    <button class="btn" onclick="calcMTFromData()">Calculate Trend from Imported Data</button>
+    <div id="mt-chart-wrap" class="mt-chart-wrap">
+      <div class="mt-chart-head">
+        <div>
+          <div class="sec" style="margin:0 0 4px;border-bottom:none;padding-bottom:0;">Market Conditions Chart</div>
+          <div class="mt-note" id="mt-chart-note">Raw monthly medians compared with the selected modified trend.</div>
+        </div>
+        <div class="mt-legend"><span class="mt-leg"><span class="mt-swatch"></span>Raw median</span><span class="mt-leg"><span class="mt-swatch smooth"></span>Modified trend</span></div>
+      </div>
+      <canvas id="mt-chart" width="900" height="360" style="width:100%;max-width:100%;height:360px;"></canvas>
+      <div class="mt-note">Use the modified trend as support only when the raw monthly data is thin or volatile. The appraiser should disclose the grouping/smoothing method and reconcile it with market behavior.</div>
+    </div>
+    <div id="mt-data-result" class="rbox" style="margin-top:16px;">
+      <h3>Market Trend — From MLS Data</h3>
+      <div id="mt-period-rows"></div>
+      <hr style="border-color:rgba(255,255,255,.12);margin:10px 0;">
+      <div class="rrow"><span class="rlbl">Periods Analyzed</span><span class="rval neu" id="mt-n-periods">—</span></div>
+      <div class="rrow"><span class="rlbl">Modifier Used</span><span class="rval neu" id="mt-modifier-used">—</span></div>
+      <div class="rrow"><span class="rlbl">Indicated Monthly Rate (Simple)</span><span class="rval neu" id="mt-monthly">—</span></div>
+      <div class="rrow"><span class="rlbl">Annualized Rate</span><span class="rval neu" id="mt-annual">—</span></div>
+      <div class="rrow"><span class="rlbl">CAGR</span><span class="rval neu" id="mt-cagr">—</span></div>
+      <div class="rrow"><span class="rlbl">Trend Direction</span><span class="rval neu" id="mt-dir">—</span></div>
+    </div>
+  </div>
+
+  <div id="mt-manual" class="spanel">
+    <div class="fml"><span class="ftitle">Monthly Rate Formula</span>Monthly % = (Current Median − Base Median) / Base Median × 100 / Months
+CAGR = ((End / Start) ^ (12 / Months)) − 1</div>
+    <div class="sec">Enter Median Sale Price by Period</div>
+    <div id="mt-manual-rows">
+      <div class="grid3 mt-row" style="align-items:end;">
+        <div class="fg"><label>Period</label><input type="text" class="mtp-label" placeholder="Jan 2023"></div>
+        <div class="fg"><label>Median Price ($)</label><input type="number" class="mtp-price" placeholder="285000"></div>
+        <div class="fg"><label>Months from Base</label><input type="number" class="mtp-months" value="0"></div>
+      </div>
+      <div class="grid3 mt-row" style="align-items:end;">
+        <div class="fg"><label>&nbsp;</label><input type="text" class="mtp-label" placeholder="Apr 2023"></div>
+        <div class="fg"><label>&nbsp;</label><input type="number" class="mtp-price" placeholder="292000"></div>
+        <div class="fg"><label>&nbsp;</label><input type="number" class="mtp-months" value="3"></div>
+      </div>
+      <div class="grid3 mt-row" style="align-items:end;">
+        <div class="fg"><label>&nbsp;</label><input type="text" class="mtp-label" placeholder="Jul 2023"></div>
+        <div class="fg"><label>&nbsp;</label><input type="number" class="mtp-price" placeholder="299000"></div>
+        <div class="fg"><label>&nbsp;</label><input type="number" class="mtp-months" value="6"></div>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="btn btn-outline" onclick="addMTRow()">+ Add Period</button>
+      <button class="btn" onclick="calcMTManual()">Calculate Trend</button>
+    </div>
+    <div class="rbox" id="mt-manual-result">
+      <h3>Manual Trend Results</h3>
+      <div class="rrow"><span class="rlbl">Monthly Rate</span><span class="rval neu" id="mm-monthly">—</span></div>
+      <div class="rrow"><span class="rlbl">Annual Rate</span><span class="rval neu" id="mm-annual">—</span></div>
+      <div class="rrow"><span class="rlbl">CAGR</span><span class="rval neu" id="mm-cagr">—</span></div>
+      <div class="rrow"><span class="rlbl">Direction</span><span class="rval neu" id="mm-dir">—</span></div>
+    </div>
+  </div>
+
+  <div id="mt-apply" class="spanel">
+    <div class="grid2">
+      <div class="fg"><label>Monthly Rate (%) — from study above</label><input type="number" id="mta-rate" placeholder="0.42" step="0.001"></div>
+      <div class="fg"><label>Months Between Comp and Subject Date</label><input type="number" id="mta-months" placeholder="6"></div>
+      <div class="fg"><label>Comp Sale Price ($)</label><input type="number" id="mta-price" placeholder="295000"></div>
+    </div>
+    <button class="btn" onclick="applyMT()">Calculate Adjustment</button>
+    <div class="rbox" id="mta-result">
+      <h3>Market Time Adjustment Result</h3>
+      <div class="rrow"><span class="rlbl">Total % Adjustment</span><span class="rval neu" id="mta-pct">—</span></div>
+      <div class="rrow"><span class="rlbl">Dollar Adjustment to Comp</span><span class="rval" id="mta-dollar">—</span></div>
+      <div class="rrow"><span class="rlbl">Adjusted Comp Price</span><span class="rval pos" id="mta-adj">—</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  GLA STUDY
+═══════════════════════════════════════ -->
+<div id="gla" class="panel">
+<div class="card">
+  <div class="card-title">GLA Adjustment Study <span class="tag">Market-Derived</span></div>
+  <p class="card-desc">Extract a supportable per-SF GLA adjustment from your imported MLS data or manually entered paired sales.</p>
+
+  <div class="cit">
+    <div class="cit-lbl">Methodology</div>
+    <p>GLA adjustments must be extracted from the market, not assumed. Simple linear regression of sale price against GLA (controlling for market time where possible) produces a slope coefficient representing the market's per-SF contribution. Paired sales analysis — isolating sales where only GLA differs — provides corroborating evidence. Both methods should be reconciled.</p>
+    <p class="cit-src">FNMA Lender Letter 2014-07; Appraisal Institute "The Appraisal of Real Estate," 15th Ed., Ch. 11–12; McKissock "Statistics for Appraisers"</p>
+  </div>
+
+  <div class="stabs">
+    <button class="stab active" onclick="showSub(this,'gla-regression')">Regression from MLS Data</button>
+    <button class="stab" onclick="showSub(this,'gla-paired')">Paired Sales</button>
+    <button class="stab" onclick="showSub(this,'gla-apply')">Apply Adjustment</button>
+  </div>
+
+  <div id="gla-regression" class="spanel active">
+    <div class="fml"><span class="ftitle">Simple Linear Regression</span>Sale Price = a + b × GLA
+b (slope, $/SF) = [n·ΣXY − ΣX·ΣY] / [n·ΣX² − (ΣX)²]
+R² = correlation coefficient squared (0 = no fit, 1 = perfect)</div>
+    <div class="info-block"><strong>Using Imported MLS Data</strong>The regression uses all imported sales (after time adjustment if the monthly rate is set). Outliers significantly above or below the regression line may be excluded — document your reasoning.</div>
+    <div class="grid2" style="margin-top:12px;">
+      <div class="fg"><label>Apply Market Time Adj First? (Monthly Rate %)</label><input type="number" id="gla-mt-rate" placeholder="0.42 (or 0 to skip)" step="0.001"></div>
+      <div class="fg"><label>Effective Date for Time Adj</label><input type="date" id="gla-eff-date"></div>
+    </div>
+    <button class="btn" onclick="runGLARegression()">Run GLA Regression</button>
+    <div class="rbox" id="gla-reg-result">
+      <h3>GLA Regression Results</h3>
+      <div class="stats-row" style="margin-bottom:12px;" id="gla-stat-chips"></div>
+      <div class="rrow"><span class="rlbl">Indicated GLA Rate (Slope)</span><span class="rval pos" id="gr-slope">—</span></div>
+      <div class="rrow"><span class="rlbl">R² (Explanatory Power)</span><span class="rval neu" id="gr-r2">—</span></div>
+      <div class="rrow"><span class="rlbl">Sales Used</span><span class="rval neu" id="gr-n">—</span></div>
+      <div class="rrow"><span class="rlbl">Reliability</span><span class="rval neu" id="gr-rel">—</span></div>
+    </div>
+  </div>
+
+  <div id="gla-paired" class="spanel">
+    <div class="fml"><span class="ftitle">Paired Sales Formula</span>GLA Contribution ($/SF) = (Price A − Price B) / (GLA A − GLA B)
+All other features must be as similar as possible.</div>
+    <div id="gla-pairs">
+      <div class="grid2 gla-pr" style="align-items:end;background:var(--cream);padding:12px;border-radius:var(--r);border:1px solid var(--border-light);margin-bottom:10px;">
+        <div class="fg"><label>Sale A Price ($)</label><input type="number" class="gpa-p" placeholder="310000"></div>
+        <div class="fg"><label>Sale A GLA (SF)</label><input type="number" class="gpa-g" placeholder="1800"></div>
+        <div class="fg"><label>Sale B Price ($)</label><input type="number" class="gpb-p" placeholder="290000"></div>
+        <div class="fg"><label>Sale B GLA (SF)</label><input type="number" class="gpb-g" placeholder="1600"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="addGLAPair()">+ Add Pair</button>
+      <button class="btn" onclick="calcGLAPaired()">Calculate</button>
+    </div>
+    <div class="rbox" id="gla-paired-result">
+      <h3>Paired Sales — GLA</h3>
+      <div id="gla-pr-rows"></div>
+      <hr style="border-color:rgba(255,255,255,.12);margin:10px 0;">
+      <div class="rrow"><span class="rlbl">Average Rate</span><span class="rval pos" id="gp-avg">—</span></div>
+      <div class="rrow"><span class="rlbl">Median Rate</span><span class="rval neu" id="gp-med">—</span></div>
+      <div class="rrow"><span class="rlbl">Range</span><span class="rval neu" id="gp-range">—</span></div>
+    </div>
+  </div>
+
+  <div id="gla-apply" class="spanel">
+    <div class="grid2">
+      <div class="fg"><label>Subject GLA (SF)</label><input type="number" id="gla-sub" placeholder="1900"></div>
+      <div class="fg"><label>Comp GLA (SF)</label><input type="number" id="gla-comp" placeholder="1650"></div>
+      <div class="fg"><label>Market Rate ($/SF) — from study</label><input type="number" id="gla-rate-apply" placeholder="75" step="0.01"></div>
+      <div class="fg"><label>Comp Sale Price ($)</label><input type="number" id="gla-comp-price" placeholder="295000"></div>
+    </div>
+    <button class="btn" onclick="applyGLA()">Calculate GLA Adjustment</button>
+    <div class="rbox" id="gla-apply-result">
+      <h3>GLA Adjustment</h3>
+      <div class="rrow"><span class="rlbl">GLA Difference</span><span class="rval neu" id="ga-diff">—</span></div>
+      <div class="rrow"><span class="rlbl">Dollar Adjustment</span><span class="rval" id="ga-dollar">—</span></div>
+      <div class="rrow"><span class="rlbl">Adjusted Comp Price</span><span class="rval pos" id="ga-adj">—</span></div>
+      <div class="rrow"><span class="rlbl">% of Sale Price</span><span class="rval neu" id="ga-pct">—</span></div>
+    </div>
+    <div class="warn-block" style="margin-top:12px;"><strong>FNMA Guideline</strong>GLA adjustments exceeding 10% of sale price require additional commentary. Adjustments should be reconciled between paired sales and regression methods where possible.</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  Q & C ANALYSIS
+═══════════════════════════════════════ -->
+<div id="qc" class="panel">
+<div class="card">
+  <div class="card-title">Quality &amp; Condition Analysis <span class="tag">Market Context</span></div>
+  <p class="card-desc">Unlike GLA or market time, quality and condition ratings cannot be derived from a formula. This tool analyzes the rating distribution across your imported comps, compares the subject profile, and helps professionals document pricing, valuation, or appraisal reasoning.</p>
+
+  <div class="warn-block">
+    <strong>Professional Judgment Required</strong>
+    The Fannie Mae UAD Q and C rating system requires professional appraisal judgment when used in an appraisal. No mathematical formula produces a Q or C rating. This tool helps users: (1) see how the subject compares to the comp pool, (2) identify outlier property-condition patterns, and (3) document the basis for pricing discussions, adjustment support, or formal appraisal analysis.
+  </div>
+
+  <div class="cit">
+    <div class="cit-lbl">Acceptable Approaches to Support C/Q Adjustments</div>
+    <p>Since direct formula-based Q/C adjustments are not supportable, appraisers use three accepted approaches: (1) Paired sales analysis — find sales where Q or C is the only meaningful difference and extract the price difference; (2) Cost-to-cure analysis — estimate the market cost of remediation where condition differences reflect deferred maintenance, then validate against market reaction; (3) Market participant interviews and market absorption data — document that buyers in this market discount or premium certain condition/quality levels by a specific percentage, supported by MLS data and agent interviews.</p>
+    <p class="cit-src">Appraisal Institute "The Appraisal of Real Estate," 15th Ed., Ch. 14; FNMA UAD Appendix D; USPAP AO-18; McKissock CE "Residential Market Analysis"</p>
+  </div>
+
+  <div class="stabs">
+    <button class="stab active" onclick="showSub(this,'qc-distribution')">Rating Distribution</button>
+    <button class="stab" onclick="showSub(this,'qc-heatmap')">Q×C Heatmap</button>
+    <button class="stab" onclick="showSub(this,'qc-paired')">Paired Sales Support</button>
+    <button class="stab" onclick="showSub(this,'qc-narrative')">Documentation</button>
+    <button class="stab" onclick="showSub(this,'qc-calibration')">Rating Calibration</button>
+  </div>
+
+  <div id="qc-distribution" class="spanel active">
+    <button class="btn" onclick="buildQCDistribution()" style="margin-bottom:14px;">Analyze Imported Sales</button>
+    <div id="qc-dist-output" style="display:none;">
+      <div class="grid2">
+        <div>
+          <div class="sec">Condition (C) Distribution</div>
+          <canvas id="c-chart" width="340" height="220"></canvas>
+          <div id="c-dist-table" style="margin-top:10px;"></div>
+        </div>
+        <div>
+          <div class="sec">Quality (Q) Distribution</div>
+          <canvas id="q-chart" width="340" height="220"></canvas>
+          <div id="q-dist-table" style="margin-top:10px;"></div>
+        </div>
+      </div>
+      <div id="qc-subject-comparison" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+  <div id="qc-heatmap" class="spanel">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">This heatmap shows the number of sales at each Quality × Condition combination. Darker cells = more sales. Your subject's Q/C is highlighted.</p>
+    <button class="btn" onclick="buildQCHeatmap()" style="margin-bottom:14px;">Build Q×C Heatmap</button>
+    <div class="qc-grid-wrap"><div id="qc-heatmap-out"></div></div>
+  </div>
+
+  <div id="qc-paired" class="spanel">
+    <div class="info-block"><strong>Paired Sales for C/Q Adjustment</strong>Enter pairs of sales from your MLS where you believe Q or C is the primary differentiator. Document that all other variables (GLA, site, location, time) are similar or have been adjusted. The tool extracts the per-level dollar difference.</div>
+    <div class="fml"><span class="ftitle">C/Q Paired Sales</span>Rating Adjustment = (Higher-Rated Sale Price − Lower-Rated Sale Price) / Rating Levels Apart
+Best practice: use after time and GLA adjustments so C/Q is isolated.</div>
+    <div id="qc-pairs">
+      <div class="grid2 qcp-row" style="align-items:end;background:var(--cream);padding:14px;border-radius:var(--r);border:1px solid var(--border-light);margin-bottom:10px;">
+        <div class="fg"><label>Sale A Price ($)</label><input type="number" class="qcpa" placeholder="310000"></div>
+        <div class="fg"><label>Sale A Rating (e.g. C3)</label><input type="text" class="qcra" placeholder="C3" maxlength="2"></div>
+        <div class="fg"><label>Sale B Price ($)</label><input type="number" class="qcpb" placeholder="285000"></div>
+        <div class="fg"><label>Sale B Rating (e.g. C4)</label><input type="text" class="qcrb" placeholder="C4" maxlength="2"></div>
+        <div class="fg"><label>Rating Type</label>
+          <select class="qctype"><option value="C">Condition (C)</option><option value="Q">Quality (Q)</option></select></div>
+        <div class="fg"><label>Notes</label><input type="text" class="qcnotes" placeholder="Similar GLA, site, location"></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="addQCPair()">+ Add Pair</button>
+      <button class="btn" onclick="calcQCPaired()">Extract Adjustment</button>
+    </div>
+    <div class="rbox" id="qc-paired-result">
+      <h3>C/Q Paired Sales Results</h3>
+      <div id="qcp-rows"></div>
+      <hr style="border-color:rgba(255,255,255,.12);margin:10px 0;">
+      <div class="rrow"><span class="rlbl">Condition — Avg Per Level</span><span class="rval pos" id="qcp-c-avg">—</span></div>
+      <div class="rrow"><span class="rlbl">Quality — Avg Per Level</span><span class="rval pos" id="qcp-q-avg">—</span></div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:10px;">These rates are indicators only. Document that pairs were selected to isolate the rating difference, and reconcile with cost-to-cure analysis where available.</div>
+    </div>
+  </div>
+
+  <div id="qc-narrative" class="spanel">
+    <div class="info-block"><strong>Documentation Framework</strong>Use this section to document your Q/C adjustment basis for the appraisal report. Fill in the fields and generate addendum language.</div>
+    <div class="grid2">
+      <div class="fg"><label>Subject Condition Rating</label><input type="text" id="qcn-s-cond" placeholder="C3"></div>
+      <div class="fg"><label>Comp Condition Rating</label><input type="text" id="qcn-c-cond" placeholder="C4"></div>
+      <div class="fg"><label>Condition Adj Applied ($)</label><input type="number" id="qcn-c-adj" placeholder="8000"></div>
+      <div class="fg"><label>Condition Adj Basis</label>
+        <select id="qcn-c-basis"><option>paired sales analysis</option><option>cost-to-cure analysis</option><option>market participant interviews</option><option>multiple methods reconciled</option></select></div>
+      <div class="fg"><label>Subject Quality Rating</label><input type="text" id="qcn-s-qual" placeholder="Q3"></div>
+      <div class="fg"><label>Comp Quality Rating</label><input type="text" id="qcn-c-qual" placeholder="Q4"></div>
+      <div class="fg"><label>Quality Adj Applied ($)</label><input type="number" id="qcn-q-adj" placeholder="12000"></div>
+      <div class="fg"><label>Quality Adj Basis</label>
+        <select id="qcn-q-basis"><option>paired sales analysis</option><option>cost differential analysis</option><option>market absorption data</option><option>multiple methods reconciled</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:14px;"><label>Additional Professional Commentary</label><textarea id="qcn-comment" rows="3" placeholder="Describe any market-specific nuances, data limitations, or additional support for these adjustments..."></textarea></div>
+    <button class="btn btn-gold" onclick="genQCNarrative()">Generate Documentation</button>
+    <div class="nar-out" id="qcn-out">
+      <div class="nar-lbl">Condition &amp; Quality Adjustment — Addendum Language</div>
+      <div id="qcn-text"></div>
+      <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="copyText('qcn-text')">Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <div id="qc-calibration" class="spanel">
+    <div class="info-block"><strong>Calibration model</strong>This workflow samples approximately 10% of the comparable sales, but it now prioritizes spectrum coverage instead of only high-risk sales. The goal is to give the professional anchor sales across different observed condition, quality, age, price, and GLA groups so the tool can learn the market's rating range instead of flattening everything into one C or Q rating. Risk flags are still included, but diversity across the Q/C spectrum is the main objective. Treat the output as analytical support, not a replacement for inspection, due diligence, or professional judgment.</div>
+    <div class="sec">Expanded Whole + Half-Step Rating Definitions</div>
+    <div class="qc-scale" id="qc-scale-defs"></div>
+    <div class="sec">Anchor Sample Settings</div>
+    <div class="grid3">
+      <div class="fg"><label>Sample Size (% of imported comps)</label><input type="number" id="qc-cal-pct" value="10" min="5" max="50" step="1"></div>
+      <div class="fg"><label>Minimum / Maximum Anchors</label><input type="text" id="qc-cal-minmax" value="3 / 10" readonly></div>
+      <div class="fg"><label>Selection Method</label><select id="qc-cal-method"><option value="spectrum" selected>Spectrum-based Q/C groups (recommended)</option><option value="risk">Risk review sample</option><option value="stratified">Stratified across age / price / GLA</option><option value="ranked">Best-ranked comps, if subject is saved</option><option value="random">Random sample</option></select></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="openQCCalibrationModal()">Rate Spectrum-Based 10% Sample</button>
+      <button class="btn btn-outline" onclick="runQCCalibrationModel()">Run Suggestions</button>
+      <button class="btn btn-outline" onclick="applySuggestedQCToImportedSales()">Apply Suggested Q/C to Missing Fields</button>
+    </div>
+    <div id="qc-cal-summary" class="nar-out"></div>
+    <div id="qc-suggest-out" class="qc-suggest-table-wrap"></div>
+  </div>
+
+</div>
+</div>
+
+
+<div id="qc-rating-modal" class="qc-modal" role="dialog" aria-modal="true" aria-labelledby="qc-modal-title">
+  <div class="qc-modal-card">
+    <div class="qc-modal-head">
+      <h3 id="qc-modal-title">Rate Anchor Comparable Sales</h3>
+      <div style="font-size:12px;color:rgba(255,255,255,.72);margin-top:4px;">Assign observed quality and condition ratings. Half-steps are internal calibration support.</div>
+    </div>
+    <div class="qc-modal-body">
+      <div class="warn-block"><strong>Important</strong>Base these ratings on MLS photos, remarks, known inspection information, and local market norms. Age can inform condition, but condition is not the same as age; renovation and maintenance can override age.</div>
+      <div id="qc-modal-sales"></div>
+    </div>
+    <div class="qc-modal-foot">
+      <button class="btn btn-outline" onclick="closeQCCalibrationModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="saveQCCalibrationRatings()">Save Ratings &amp; Run Model</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+  SELLER CONCESSIONS
+═══════════════════════════════════════ -->
+<div id="concessions" class="panel">
+<div class="card">
+  <div class="card-title">Seller Concessions Fact Study <span class="tag">Evidence + Talking Points</span><span class="mode-pill" id="sc-mode-pill">Appraiser Mode</span></div>
+  <p class="card-desc">Summarize seller-paid closing costs, credits, buydowns, repair allowances, and other concessions as facts from the MLS data. The goal is to document what is present, show net-price indicators, and create editable talking points without forcing a threshold-based conclusion.</p>
+
+  <div class="warn-block"><strong>Professional Use Note</strong>This page does not label concessions as automatically typical, atypical, high, or low. It reports mapped facts from the imported MLS data. Any conclusion about price influence, market behavior, or adjustment support should be based on verification and professional judgment.</div>
+  <div class="cit"><div class="cit-lbl">Methodology</div><p>Compare concession frequency, concession dollars, concession percentage of sale price, and net sale price indicators across similar sales. The factual summary can then be copied into editable appraiser addendum language or agent/client talking points.</p><p class="cit-src">Consistent with appraisal market analysis, comparable sale verification, and professional pricing support practices.</p></div>
+
+  <div class="stabs">
+    <button class="stab active" onclick="showSub(this,'sc-from-data')">From MLS Data</button>
+    <button class="stab" onclick="showSub(this,'sc-manual')">Manual Calculator</button>
+    <button class="stab" onclick="showSub(this,'sc-narrative')">Narrative / Talking Points</button>
+  </div>
+
+  <div id="sc-from-data" class="spanel active">
+    <div class="info-block"><strong>Auto-Analysis</strong>Map a seller concession column during MLS import if available. The suite will calculate concession frequency, median concession, concession percentage, and net sale price indicators.</div>
+    <div class="grid2">
+      <div class="fg"><label>Analysis View</label><select id="sc-view"><option value="all">All imported sales</option><option value="with">Only sales with concessions</option></select></div>
+      <div class="fg"><label>Output Type</label><input type="text" value="Factual concession summary only" readonly></div>
+    </div>
+    <button class="btn btn-gold" onclick="runSellerConcessionStudy()">Run Seller Concessions Study</button>
+    <div id="sc-data-output" style="display:none;margin-top:18px;"></div>
+  </div>
+
+  <div id="sc-manual" class="spanel">
+    <div class="fml"><span class="ftitle">Concession Metrics</span>Concession % = Seller Concession ÷ Contract Sale Price × 100
+Net Price Indicator = Sale Price − Seller Concession</div>
+    <div class="grid2">
+      <div class="fg"><label>Contract Sale Price ($)</label><input type="number" id="scm-price" placeholder="425000"></div>
+      <div class="fg"><label>Seller Concession / Credit ($)</label><input type="number" id="scm-concession" placeholder="12000"></div>
+      <div class="fg"><label>Comparable / Offer Label</label><input type="text" id="scm-label" placeholder="Comp 2 or Offer A"></div>
+    </div>
+    <button class="btn" onclick="calcSellerConcessionManual()">Calculate Concession Impact</button>
+    <div class="rbox" id="scm-result">
+      <h3>Seller Concession Result</h3>
+      <div class="rrow"><span class="rlbl">Concession Percentage</span><span class="rval neu" id="scm-pct">—</span></div>
+      <div class="rrow"><span class="rlbl">Net Price Indicator</span><span class="rval pos" id="scm-net">—</span></div>
+
+    </div>
+  </div>
+
+  <div id="sc-narrative" class="spanel">
+    <div class="info-block"><strong>Auto-filled from MLS Data</strong>Run the MLS concessions study first. These fields will copy the factual results from that analysis, and you can still edit any field before generating the final talking points.</div>
+    <div class="btn-row" style="margin-bottom:14px;"><button class="btn btn-outline" onclick="populateSellerConcessionNarrativeFields()">Copy Latest MLS Facts Into Narrative</button></div>
+    <div class="grid2">
+      <div class="fg"><label>Market / Segment</label><input type="text" id="scn-market" placeholder="Entry-level detached homes in Greenville County"></div>
+      <div class="fg"><label>Concession Frequency</label><input type="text" id="scn-frequency" placeholder="28% of sales analyzed"></div>
+      <div class="fg"><label>Observed Concession Facts</label><input type="text" id="scn-range" placeholder="Median, range, average, and max from MLS data"></div>
+      <div class="fg"><label>Editable Conclusion / Talking Point</label><select id="scn-conclusion"><option>concession activity was documented from the imported MLS data</option><option>no mapped seller concessions were detected in the imported MLS data</option><option>seller concessions were present in a minority of the imported sales</option><option>seller concessions were present in a majority of the imported sales</option><option>additional verification is recommended for sales with mapped concessions</option></select></div>
+    </div>
+    <div class="editable-note">Auto-filled values are only a starting point. Edit the fields above before generating final language.</div>
+    <button class="btn btn-gold" onclick="genSellerConcessionNarrative()">Generate Concession Narrative</button>
+    <div class="nar-out" id="scn-out"><div class="nar-lbl">Seller Concessions Narrative / Client Talking Points</div><div id="scn-text"></div><button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="copyText('scn-text')">Copy to Clipboard</button></div>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+  SITE / LAND VALUE
+═══════════════════════════════════════ -->
+<div id="site-value" class="panel">
+<div class="card">
+  <div class="card-title">Site / Land Value Support <span class="tag">Agent + Appraiser</span></div>
+  <p class="card-desc">Use this module for vacant land pricing support, lot premium conversations, and appraiser cost-approach site value support. It supports three common approaches: land sales comparison, allocation, and abstraction.</p>
+  <div class="info-block"><strong>Dual-use positioning</strong>Agents can explain vacant-land pricing and lot premiums to clients. Appraisers can organize market-derived site value support for the cost approach, while still applying professional judgment and verification.</div>
+
+  <div class="stabs">
+    <button class="stab active" onclick="showSub(this,'site-sales')">Land Sales</button>
+    <button class="stab" onclick="showSub(this,'site-allocation')">Allocation / Abstraction</button>
+    <button class="stab" onclick="showSub(this,'site-narrative')">Narrative</button>
+  </div>
+
+  <div id="site-sales" class="spanel active">
+    <div class="sec">Comparable Land / Vacant Lot Sales</div>
+    <p class="card-desc">Enter vacant land or lot sales. The tool calculates price per acre, price per SF, median indicators, and a subject site indication. Use notes for zoning, utilities, topography, road frontage, water/sewer, view, corner influence, assemblage potential, and location quality.</p>
+    <div class="grid3">
+      <div class="fg"><label>Subject Site Area (SF)</label><input type="number" id="land-sub-sf" placeholder="9500"></div>
+      <div class="fg"><label>Subject Site Area (Acres)</label><input type="number" id="land-sub-acres" placeholder="0.218" step="0.001"></div>
+      <div class="fg"><label>Intended Use</label><select id="land-use"><option>Residential building lot</option><option>Vacant land pricing support</option><option>Cost approach site value</option><option>Highest and best use support</option><option>Lot premium discussion</option></select></div>
+    </div>
+    <div id="land-sale-rows">
+      <div class="cal-sale-card land-row">
+        <div class="cal-title">Land Sale 1</div>
+        <div class="cal-grid">
+          <div class="fg"><label>Address / ID</label><input class="land-addr" placeholder="Lot 4, Oak Ridge"></div>
+          <div class="fg"><label>Sale Price ($)</label><input type="number" class="land-price" placeholder="85000"></div>
+          <div class="fg"><label>Site SF</label><input type="number" class="land-sf" placeholder="10000"></div>
+          <div class="fg"><label>Acres</label><input type="number" class="land-acres" placeholder="0.23" step="0.001"></div>
+          <div class="fg"><label>Sale Date</label><input type="date" class="land-date"></div>
+          <div class="fg"><label>Notes / Adjustments</label><input class="land-notes" placeholder="Similar zoning, public utilities"></div>
+        </div>
+      </div>
+      <div class="cal-sale-card land-row">
+        <div class="cal-title">Land Sale 2</div>
+        <div class="cal-grid">
+          <div class="fg"><label>Address / ID</label><input class="land-addr" placeholder="Lot 8, Pine Hill"></div>
+          <div class="fg"><label>Sale Price ($)</label><input type="number" class="land-price" placeholder="92000"></div>
+          <div class="fg"><label>Site SF</label><input type="number" class="land-sf" placeholder="12000"></div>
+          <div class="fg"><label>Acres</label><input type="number" class="land-acres" placeholder="0.275" step="0.001"></div>
+          <div class="fg"><label>Sale Date</label><input type="date" class="land-date"></div>
+          <div class="fg"><label>Notes / Adjustments</label><input class="land-notes" placeholder="Slightly superior frontage"></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn btn-outline" onclick="addLandSaleRow()">+ Add Land Sale</button><button class="btn btn-gold" onclick="calcLandSales()">Calculate Site Indicators</button></div>
+    <div id="land-sales-out" style="display:none;margin-top:18px;"></div>
+  </div>
+
+  <div id="site-allocation" class="spanel">
+    <div class="info-block"><strong>Cost approach support</strong>Allocation and abstraction are helpful when vacant land sales are limited. They should be reconciled with available land sales, builder interviews, assessor land ratios, extraction from improved sales, and local market behavior.</div>
+    <div class="grid2">
+      <div class="fg"><label>Improved Sale Price ($)</label><input type="number" id="alloc-sale" placeholder="425000"></div>
+      <div class="fg"><label>Estimated Improvement Value / RCNLD ($)</label><input type="number" id="alloc-impr" placeholder="330000"></div>
+      <div class="fg"><label>Allocation Land Ratio (%)</label><input type="number" id="alloc-ratio" placeholder="22" step="0.1"></div>
+      <div class="fg"><label>Subject Site Area (SF)</label><input type="number" id="alloc-site-sf" placeholder="9500"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-gold" onclick="calcSiteAllocation()">Calculate Allocation / Abstraction</button></div>
+    <div class="rbox" id="alloc-out">
+      <h3>Site Value Indicators</h3>
+      <div class="rrow"><span class="rlbl">Abstraction Indicator</span><span class="rval pos" id="alloc-abstraction">—</span></div>
+      <div class="rrow"><span class="rlbl">Allocation Indicator</span><span class="rval neu" id="alloc-allocation">—</span></div>
+      <div class="rrow"><span class="rlbl">Indicated $ / SF</span><span class="rval neu" id="alloc-psf">—</span></div>
+    </div>
+  </div>
+
+  <div id="site-narrative" class="spanel">
+    <div class="grid2">
+      <div class="fg"><label>Land Sales Analyzed</label><input id="site-nar-count" placeholder="3 land sales"></div>
+      <div class="fg"><label>Primary Indicator</label><input id="site-nar-indicator" placeholder="$90,000 to $98,000"></div>
+      <div class="fg"><label>Method Used</label><select id="site-nar-method"><option>land sales comparison</option><option>land sales comparison with allocation support</option><option>allocation and abstraction due to limited vacant land sales</option><option>multiple methods reconciled</option></select></div>
+      <div class="fg"><label>Reliability</label><select id="site-nar-reliability"><option>high</option><option>moderate</option><option>limited</option></select></div>
+    </div>
+    <div class="fg"><label>Editable Notes</label><textarea id="site-nar-notes" rows="3" placeholder="Discuss zoning, utilities, topography, frontage, location, site utility, and any adjustments or data limitations."></textarea></div>
+    <button class="btn btn-gold" onclick="genSiteNarrative()">Generate Site Value Narrative</button>
+    <div class="nar-out" id="site-nar-out"><div class="nar-lbl">Site / Land Value Narrative</div><div id="site-nar-text"></div><button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="copyText('site-nar-text')">Copy to Clipboard</button></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  NARRATIVE
+═══════════════════════════════════════ -->
+<div id="narrative" class="panel">
+<div class="card">
+  <div class="card-title">Report Narrative Generator <span class="tag">USPAP Addendum</span></div>
+  <p class="card-desc">Generate defensible addendum language for market conditions, GLA, and comparable selection. Text auto-populates from data entered in other tabs.</p>
+  <div class="warn-block"><strong>Usage Note</strong>Generated language is a professional framework — always review and customize to your specific assignment, data, and market. Never use boilerplate without personalizing it to reflect your actual analysis.</div>
+  <div class="info-block"><strong>Auto-Carry Forward</strong>Market time, GLA, comp selection, Q/C calibration, and reconciliation results now carry into this narrative form as you work. You can override any field; after you edit a field manually, the tool will not overwrite it unless you clear it.</div>
+  <div class="grid2">
+    <div class="fg"><label>Market Area Description</label><input type="text" id="nar-market" placeholder="Greenville County, SC"></div>
+    <div class="fg"><label>Analysis Period</label><input type="text" id="nar-period" placeholder="January 2023 – March 2024"></div>
+    <div class="fg"><label>Number of Sales Analyzed</label><input type="number" id="nar-n" placeholder="42"></div>
+    <div class="fg"><label>Data Source</label><input type="text" id="nar-source" placeholder="Western Upstate MLS, County Records"></div>
+    <div class="fg"><label>Monthly Trend Rate (%)</label><input type="number" id="nar-rate" placeholder="0.42" step="0.001"></div>
+    <div class="fg"><label>Trend Direction</label><select id="nar-dir"><option>increasing</option><option>stable</option><option>declining</option></select></div>
+    <div class="fg"><label>GLA Rate ($/SF)</label><input type="number" id="nar-gla" placeholder="70"></div>
+    <div class="fg"><label>GLA Extraction Method</label><select id="nar-gla-method"><option>paired sales analysis</option><option>simple linear regression</option><option>paired sales and regression, reconciled</option></select></div>
+    <div class="fg"><label>Comp Selection Criteria</label><input type="text" id="nar-sel" placeholder="Within 1 mile, ±300 SF GLA, within 12 months"></div>
+  </div>
+  <button class="btn btn-gold" onclick="genMainNarrative()">Generate Narrative</button>
+  <div class="nar-out" id="main-nar-out">
+    <div class="nar-lbl">Market Conditions Addendum — Copy to Report</div>
+    <div id="main-nar-text"></div>
+    <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="copyText('main-nar-text')">Copy to Clipboard</button>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+  ADJUSTMENT GRID + RECONCILIATION
+═══════════════════════════════════════ -->
+<div id="adjustments" class="panel">
+<div class="card">
+  <div class="card-title">Adjustment Grid &amp; Reconciliation <span class="tag">New v3</span></div>
+  <p class="card-desc">Build a report-style adjustment grid from your top-ranked comparables. The grid captures market time, GLA, site, age, Q/C, other adjustments, net/gross adjustment metrics, and reconciles the adjusted range into a value indication.</p>
+  <div class="warn-block"><strong>Important</strong>These calculations organize and document your analysis. They do not replace professional judgment, appraisal standards, broker duties, or local market expertise. Add notes for any adjustment that materially affects value.</div>
+  <div class="info-block"><strong>Comparable selection</strong>Choose the specific comps you want to carry into the adjustment grid. Click Refresh Comp Selector after importing/ranking data. If nothing is selected, the grid will use the top six ranked comps as a fallback.</div>
+  <div class="btn-row" style="margin-bottom:12px;"><button class="btn btn-outline" onclick="populateAdjustmentCompSelector()">Refresh Comp Selector</button><button class="btn btn-outline" onclick="selectTopAdjustmentComps(6)">Select Top 6</button><button class="btn btn-outline" onclick="clearAdjustmentCompSelection()">Clear Selections</button></div>
+  <div id="adj-comp-selector" class="checklist" style="display:none;margin-bottom:16px;"></div>
+  <div class="grid3">
+    <div class="fg"><label>Fallback Top N Ranked Sales</label><input type="number" id="adj-topn" value="6" min="1" max="20"></div>
+    <div class="fg"><label>Market Time Rate % / Month</label><input type="number" id="adj-mt-rate" placeholder="0.42" step="0.001"></div>
+    <div class="fg"><label>GLA Rate $ / SF</label><input type="number" id="adj-gla-rate" placeholder="75" step="0.01"></div>
+    <div class="fg"><label>Site Rate $ / SF</label><input type="number" id="adj-site-rate" placeholder="0.50" step="0.01"></div>
+    <div class="fg"><label>Age Rate $ / Year</label><input type="number" id="adj-age-rate" placeholder="500" step="1"></div>
+    <div class="fg"><label>Condition $ / Level</label><input type="number" id="adj-cond-rate" placeholder="8000" step="100"></div>
+    <div class="fg"><label>Quality $ / Level</label><input type="number" id="adj-qual-rate" placeholder="12000" step="100"></div>
+    <div class="fg"><label>Half-step Q/C Mode</label><select id="adj-half-mode"><option value="on">Use decimal rating distance</option><option value="off">Round to whole UAD level</option></select></div>
+  </div>
+  <div class="btn-row"><button class="btn btn-gold" onclick="buildAdjustmentGrid()">Build Adjustment Grid</button><button class="btn btn-outline" onclick="exportAdjustmentCSV()">Export Grid CSV</button></div>
+  <div id="adj-grid-out" style="display:none;margin-top:18px;overflow-x:auto;"></div>
+  <div id="recon-out" style="display:none;margin-top:18px;"></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  DATA QUALITY / OUTLIERS
+═══════════════════════════════════════ -->
+<div id="quality" class="panel">
+<div class="card">
+  <div class="card-title">Data Quality, Outliers &amp; Regression Review <span class="tag">New v3</span></div>
+  <p class="card-desc">Review whether your MLS import is suitable for analysis. This section flags missing fields, thin periods, duplicate-looking records, price/GLA outliers, and gives you a visual GLA regression check.</p>
+  <div class="btn-row"><button class="btn btn-gold" onclick="runDataQuality()">Run Data Quality Check</button><button class="btn btn-outline" onclick="drawGLAScatter()">Draw GLA Scatterplot</button></div>
+  <div id="dq-output" style="display:none;margin-top:16px;"></div>
+  <div class="scatter-wrap" id="scatter-wrap" style="display:none;"><canvas id="gla-scatter" width="860" height="360"></canvas><div class="mini-muted">Dots show imported sales. Line shows simple price-vs-GLA regression. Large residuals should be reviewed before relying on the slope.</div></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  SAVE / EXPORT
+═══════════════════════════════════════ -->
+<div id="storage" class="panel">
+<div class="card">
+  <div class="card-title">Workfile &amp; Export Center <span class="tag">Centralized</span></div>
+  <p class="card-desc">Use this one place to save, restore, export, or print the assignment workfile. This keeps the main workflow focused and avoids duplicate print buttons throughout the app.</p>
+  <div class="btn-row"><button class="btn btn-gold" onclick="saveWorkfileLocal()">Save to Browser</button><button class="btn" onclick="restoreWorkfileLocal()">Restore Browser Save</button><button class="btn btn-outline" onclick="downloadWorkfileJSON()">Download JSON Workfile</button><button class="btn btn-outline" onclick="document.getElementById('wf-file').click()">Import JSON Workfile</button><input type="file" id="wf-file" accept=".json" style="display:none" onchange="importWorkfileJSON(this)"></div>
+  <div class="workfile-center-card"><h4>Print / Save PDF for Workfile</h4><p>Create a clean printable workfile exhibit with selected sections. In the browser print window, choose <strong>Save as PDF</strong>.</p><button class="btn btn-gold" onclick="openWorkfilePrintDialog()">Print to Work File / PDF</button></div>
+  <div class="info-block" style="margin-top:14px;"><strong>Privacy</strong>Browser saves stay in localStorage on this device. JSON exports contain your subject and imported sales data, so store them like any other confidential valuation, listing, or appraisal workfile.</div>
+  <div id="storage-status" class="nar-out" style="display:none;"></div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+  REFERENCES
+═══════════════════════════════════════ -->
+<div id="refs" class="panel">
+<div class="card">
+  <div class="card-title">Methodology &amp; Published Sources</div>
+  <p class="card-desc">Methods in this tool are grounded in published, industry-accepted valuation sources. Appraisers may cite applicable references in appraisal addenda; agents and brokers can use them to explain pricing logic and comparable selection more clearly.</p>
+  <div class="cit"><div class="cit-lbl">USPAP</div><p>Standards Rule 1-4(a): all adjustments must be market-driven and supported. Advisory Opinion 18 addresses statistical analysis in appraisals. Advisory Opinion 11 covers comparable sale selection.</p><p class="cit-src">Appraisal Standards Board, The Appraisal Foundation — current edition</p></div>
+  <div class="cit"><div class="cit-lbl">Fannie Mae Selling Guide</div><p>B4-1.3-09: Market Conditions adjustment requirements and 1004MC documentation. B4-1.3-06: Condition and quality ratings. B4-1.3-08: Comparable sale selection criteria. Lender Letter 2014-07: GLA adjustments must be market-supported, not assumed rates. UAD Appendix D: C1–C6 and Q1–Q6 rating definitions.</p><p class="cit-src">selling.fanniemae.com — current Selling Guide</p></div>
+  <div class="cit"><div class="cit-lbl">The Appraisal of Real Estate, 15th Edition</div><p>Ch. 9: Land valuation (allocation, extraction). Ch. 11: Paired sales analysis and quantitative adjustments. Ch. 12: Regression analysis and statistical adjustment extraction. Ch. 14: Reconciliation and adjustment procedures. Ch. 15: Sales comparison approach, market conditions adjustments.</p><p class="cit-src">Appraisal Institute, Chicago, IL — ISBN 978-1-935328-87-8</p></div>
+  <div class="cit"><div class="cit-lbl">Site Value / Cost Approach Support</div><p>Site value can be supported with comparable vacant land sales, allocation, and abstraction methods. Agents can use the same market evidence for vacant-land pricing and lot-premium conversations, while appraisers can use it as organized support for cost approach site value reconciliation.</p><p class="cit-src">Appraisal Institute cost approach and land valuation methods; professional market analysis practice.</p></div>
+  <div class="cit"><div class="cit-lbl">Geocoding — OpenStreetMap Nominatim</div><p>This tool uses the Nominatim geocoding API provided by OpenStreetMap contributors for address-to-coordinate conversion. Nominatim is a free, open-source service. Usage is subject to the Nominatim Usage Policy (max 1 request/second, no bulk commercial use).</p><p class="cit-src">nominatim.openstreetmap.org — OpenStreetMap contributors, ODbL license</p></div>
+  <div class="cit"><div class="cit-lbl">Seller Concession Analysis</div><p>Seller concessions should be analyzed as part of sale verification and comparable interpretation. The relevant test is whether concessions are typical for the market or whether they appear to influence price, net proceeds, or buyer behavior.</p><p class="cit-src">Comparable sale verification, appraisal market analysis, and professional pricing support practice.</p></div>
+  <div class="cit"><div class="cit-lbl">Comp Ranking Methodology</div><p>The weighted similarity scoring system ranks comparable sales by proximity to the subject across market-relevant attributes: GLA, distance from the subject, sale date recency, site size, year built, garage, basement, pool, quality rating, and condition rating. This is consistent with USPAP AO-11 selection criteria and FNMA B4-1.3-08 comparability standards. Weights are adjustable to reflect local market priorities.</p><p class="cit-src">USPAP Advisory Opinion 11; FNMA B4-1.3-08; Appraisal Institute, Ch. 14</p></div>
+  <div class="warn-block" style="margin-top:16px;"><strong>Disclaimer</strong>This tool performs calculations based on user-entered data. Accuracy and defensibility depend on data quality, verification, and professional judgment. Appraisers must independently verify all inputs and conclusions for USPAP compliance. Agents and brokers should present results as market-analysis and pricing support, not as an appraisal.</div>
+</div>
+</div>
+
+</div>
+</div>
+</main>
+
+<footer style="background:var(--navy);color:rgba(255,255,255,.5);font-size:12px;padding:20px 28px;text-align:center;line-height:1.8;">
+  <div>Real Estate Market Analysis Suite Launch Edition &nbsp;·&nbsp; For appraisers, agents, brokers, and valuation professionals</div>
+  <div style="margin-top:4px;">USPAP · FNMA Selling Guide · Appraisal Institute 15th Ed. · OpenStreetMap Nominatim</div>
+  <div style="margin-top:4px;opacity:.6;font-size:11px;">Results depend on data quality. Professional judgment governs all conclusions. Agent-facing outputs are pricing support and are not appraisals.</div>
+</footer>
+
+
+
+
+
+<script src="./app.js"></script>
+</body>
+</html>
