@@ -13,37 +13,49 @@
 <body>
 
 <header class="hdr">
-  <section class="site-hero">
-    <div>
-      <div class="hero-eyebrow">Professional Launch Edition · Appraiser + Agent market-analysis workflow</div>
-      <h1>MLS-powered market analysis, <span>from comp support to client-ready talking points.</span></h1>
-      <p class="hero-lede">A premium market-analysis and workfile-support suite built for appraisers who need defensible support and real estate professionals who need clearer pricing conversations.</p>
-      <div class="hero-proof">
-        <span>MLS CSV import</span><span>Market trend extraction</span><span>GLA regression</span><span>Q/C calibration</span><span>Editable narratives</span><span>Workfile exports</span>
+  <section class="hero">
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1>Modern Real Estate Intelligence</h1>
+
+      <p>
+        Analyze properties, evaluate investment opportunities,
+        and generate professional market insights from one
+        powerful platform.
+      </p>
+
+      <div class="hero-buttons">
+        <a href="#demo" class="primary-btn">Explore Platform</a>
+        <a href="#contact" class="secondary-btn">Request Demo</a>
       </div>
-      <div class="mode-switch" aria-label="Choose buyer mode">
-        <button class="mode-btn active" id="mode-appraiser" onclick="setBuyerMode('appraiser')">Appraiser Mode</button>
-        <button class="mode-btn" id="mode-agent" onclick="setBuyerMode('agent')">Agent / Broker Mode</button>
-      </div>
-      <div class="hero-cta">
-        <button class="btn btn-gold" onclick="loadDemoData()">Load Demo Data</button>
-        <button class="btn" onclick="document.getElementById('subject').scrollIntoView({behavior:'smooth',block:'start'})">Start Blank Workflow</button>
-        <button class="btn btn-outline" onclick="showPanel('refs', document.querySelector(`[onclick*=\'refs\']`)); document.getElementById('refs').scrollIntoView({behavior:'smooth',block:'start'})">View Methodology</button>
+
+      <div class="trust-line">
+        Trusted by agents, investors, and modern real estate professionals.
       </div>
     </div>
-    <aside class="hero-card launch-score-card" aria-label="Launch readiness snapshot">
-      <div class="hero-score"><strong>96</strong><span>launch-readiness framework</span></div>
-      <div class="launch-meter"><span></span></div>
-      <h3>Built for professional trust and buyer clarity.</h3>
-      <p>Positioned as market-analysis support, not an appraisal replacement. The workflow separates evidence, judgment, and client-ready language.</p>
-      <div class="score-list">
-        <div><b>Appraiser value</b><span>Workfile support + methods</span></div>
-        <div><b>Agent value</b><span>Pricing conversations + net facts</span></div>
-        <div><b>Demo value</b><span>One-click sample dataset</span></div>
-        <div><b>Trust value</b><span>Editable narratives + disclaimers</span></div>
+
+    <div class="hero-dashboard">
+      <div class="dashboard-card">
+        <h3>Investment Snapshot</h3>
+
+        <div class="metric">
+          <span>Projected ROI</span>
+          <strong>18.4%</strong>
+        </div>
+
+        <div class="metric">
+          <span>Neighborhood Score</span>
+          <strong>92/100</strong>
+        </div>
+
+        <div class="metric">
+          <span>Market Growth</span>
+          <strong>+12.6%</strong>
+        </div>
       </div>
-    </aside>
-  </section>
+    </div>
+  </div>
+</section>
 </header>
 
 
