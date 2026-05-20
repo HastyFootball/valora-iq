@@ -128,8 +128,8 @@ function Auth({ type }) {
 function DashboardShell({ persona, session }) {
   const [tab, setTab] = useState('Dashboard');
   const [collapsed, setCollapsed] = useState(false);
-  const [subject, setSubject] = useState(defaultSubject);
-  const [sales, setSales] = useState(sampleSales);
+  const [subject, setSubject] = useState({});
+  const [sales, setSales] = useState([]);
   const [selectedComps, setSelectedComps] = useState([]);
   const [adjRows, setAdjRows] = useState([]);
   const [glaNarData, setGlaNarData] = useState({ rate: 0, method: '' });
