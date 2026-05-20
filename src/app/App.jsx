@@ -4,9 +4,9 @@ import '../styles/globals.css';
 import { supabase } from '../lib/supabaseClient';
 
 // ── Router ──────────────────────────────────────────────────────────────────
-const routes = ['/', '/login', '/signup', '/appraiser', '/agent'];
-function navigate(path) { window.history.pushState({}, '', path); window.dispatchEvent(new Event('popstate')); if (!path.includes('/appraiser/') && !path.includes('/agent/')) window.scrollTo({ top: 0, behavior: 'smooth' }); }
-function usePath() { const [path, setPath] = useState(location.pathname); useEffect(() => { const fn = () => setPath(location.pathname); addEventListener('popstate', fn); return () => removeEventListener('popstate', fn) }, []); return routes.some(r => path === r || path.startsWith('/appraiser/') || path.startsWith('/agent/')) ? path : '/'; }
+const routes = ['/', '/login', '/signup', '/appraiser', '/agent', '/demo/appraiser', '/demo/agent'];
+function navigate(path) { window.history.pushState({}, '', path); window.dispatchEvent(new Event('popstate')); if (!path.includes('/appraiser/') && !path.includes('/agent/') && !path.includes('/demo/')) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function usePath() { const [path, setPath] = useState(location.pathname); useEffect(() => { const fn = () => setPath(location.pathname); addEventListener('popstate', fn); return () => removeEventListener('popstate', fn) }, []); return routes.some(r => path === r || path.startsWith('/appraiser/') || path.startsWith('/agent/') || path.startsWith('/demo/appraiser') || path.startsWith('/demo/agent')) ? path : '/'; }
 function Link({ to, children, className }) { return <a href={to} className={className} onClick={e => { e.preventDefault(); navigate(to) }}>{children}</a> }
 function Logo({ compact = false }) { return <div className="logo-lockup"><div className="logo-mark"><span>V</span></div>{!compact && <div><strong>Valora<span>IQ</span></strong><small>Real Estate Intelligence</small></div>}</div> }
 
@@ -86,7 +86,7 @@ function iconFor(t) { if (t.includes('Import')) return '⬆'; if (t.includes('Ma
 
 // ── Public pages ──────────────────────────────────────────────────────────────
 function PublicNav() { return <header className="public-nav"><Link to="/" className="plain"><Logo /></Link><nav><a href="/#workflows">Workflows</a><a href="/#features">Features</a><a href="/#pricing">Pricing</a><Link to="/login">Log in</Link><Link className="btn small gold" to="/signup">Start free</Link></nav></header> }
-function Landing() { return <><PublicNav /><main><section className="hero"><div className="hero-grid"><div><p className="eyebrow">Professional Real Estate Intelligence Workspace</p><h1>One platform. Two workflows. Cleaner real estate decisions.</h1><p className="hero-copy">ValoraIQ helps appraisers build defensible valuation support and helps agents create persuasive CMA and listing presentations from the same market intelligence engine.</p><div className="hero-actions"><Link className="btn gold" to="/signup">Start building →</Link><Link className="btn glass" to="/appraiser">View demo dashboard</Link></div></div><div className="hero-preview"><div className="preview-header"><span /><span /><span /></div><div className="preview-title">Market Snapshot</div><div className="metric-grid three"><div><b>$425k</b><span>Median Sold</span></div><div><b>18</b><span>DOM</span></div><div><b>97.4%</b><span>List/Sale</span></div></div><div className="fake-chart">{[42, 55, 48, 68, 61, 78, 90].map(h => <i key={h} style={{ height: `${h}%` }} />)}</div><div className="preview-card"><b>Professional-use positioning</b><span>Market evidence, workflow support, and presentation outputs without replacing professional judgment.</span></div></div></div></section><section className="section" id="workflows"><p className="eyebrow center">Persona-specific dashboards</p><h2>Appraisers and agents should not see the same product.</h2><div className="workflow-cards"><article><h3>Appraiser Workspace</h3><p>Subject, MLS import, Q/C analyzer, market conditions, GLA study, comp ranking, site value, adjustments, concessions, reconciliation, narrative, and workfile export.</p><Link to="/appraiser">Open appraiser demo</Link></article><article><h3>Agent/Broker Workspace</h3><p>Property overview, market snapshot, pricing strategy, active/pending/sold intelligence, seller net sheet, listing presentation, and CMA export.</p><Link to="/agent">Open agent demo</Link></article></div></section><section className="section" id="features"><p className="eyebrow center">Core platform</p><h2>From raw MLS data to clear, client-ready outputs.</h2><div className="feature-grid">{['MLS Import', 'Comp Ranking + Geocoding', 'Q/C Analyzer', 'Market Conditions Modifier', 'GLA Regression + Paired Sales', 'Workfile Save / Export'].map(t => <div className="feature-card" key={t}><div className="glyph">✦</div><h3>{t}</h3><p>Premium workflow support designed for real estate professionals.</p></div>)}</div></section><section className="section pricing" id="pricing"><p className="eyebrow center">Pricing preview</p><h2>Start with the workflow. Add cloud accounts next.</h2><p className="muted max center-block">Auth, database persistence, billing, teams, and saved cloud projects are ready for the next Supabase phase.</p></section></main></> }
+function Landing() { return <><PublicNav /><main><section className="hero"><div className="hero-grid"><div><p className="eyebrow">Professional Real Estate Intelligence Workspace</p><h1>One platform. Two workflows. Cleaner real estate decisions.</h1><p className="hero-copy">ValoraIQ helps appraisers build defensible valuation support and helps agents create persuasive CMA and listing presentations from the same market intelligence engine.</p><div className="hero-actions"><Link className="btn gold" to="/signup">Start building →</Link><Link className="btn glass" to="/demo/appraiser">View demo dashboard</Link></div></div><div className="hero-preview"><div className="preview-header"><span /><span /><span /></div><div className="preview-title">Market Snapshot</div><div className="metric-grid three"><div><b>$425k</b><span>Median Sold</span></div><div><b>18</b><span>DOM</span></div><div><b>97.4%</b><span>List/Sale</span></div></div><div className="fake-chart">{[42, 55, 48, 68, 61, 78, 90].map(h => <i key={h} style={{ height: `${h}%` }} />)}</div><div className="preview-card"><b>Professional-use positioning</b><span>Market evidence, workflow support, and presentation outputs without replacing professional judgment.</span></div></div></div></section><section className="section" id="workflows"><p className="eyebrow center">Persona-specific dashboards</p><h2>Appraisers and agents should not see the same product.</h2><div className="workflow-cards"><article><h3>Appraiser Workspace</h3><p>Subject, MLS import, Q/C analyzer, market conditions, GLA study, comp ranking, site value, adjustments, concessions, reconciliation, narrative, and workfile export.</p><Link to="/demo/appraiser">Open appraiser demo</Link></article><article><h3>Agent/Broker Workspace</h3><p>Property overview, market snapshot, pricing strategy, active/pending/sold intelligence, seller net sheet, listing presentation, and CMA export.</p><Link to="/demo/agent">Open agent demo</Link></article></div></section><section className="section" id="features"><p className="eyebrow center">Core platform</p><h2>From raw MLS data to clear, client-ready outputs.</h2><div className="feature-grid">{['MLS Import', 'Comp Ranking + Geocoding', 'Q/C Analyzer', 'Market Conditions Modifier', 'GLA Regression + Paired Sales', 'Workfile Save / Export'].map(t => <div className="feature-card" key={t}><div className="glyph">✦</div><h3>{t}</h3><p>Premium workflow support designed for real estate professionals.</p></div>)}</div></section><section className="section pricing" id="pricing"><p className="eyebrow center">Pricing preview</p><h2>Start with the workflow. Add cloud accounts next.</h2><p className="muted max center-block">Auth, database persistence, billing, teams, and saved cloud projects are ready for the next Supabase phase.</p></section></main></> }
 function Auth({ type }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -125,63 +125,155 @@ function Auth({ type }) {
 }
 
 // ── Dashboard shell ───────────────────────────────────────────────────────────
-function DashboardShell({ persona, session }) {
+function emptySubject() { return { address: '', city: '', effdate: new Date().toISOString().slice(0, 10), gla: '', site: '', year: '', beds: '', baths: '', garage: '', basement: '', pool: '', qual: '', cond: '', value: '', appraiser: '' }; }
+function emptyWorkspace() { return { subject: emptySubject(), sales: [], selectedComps: [], adjRows: [], glaNarData: { rate: 0, method: '' }, mtNarData: { monthly: 0, dir: 'stable' } }; }
+function demoWorkspace() { return { subject: defaultSubject, sales: sampleSales, selectedComps: [], adjRows: [], glaNarData: { rate: 0, method: '' }, mtNarData: { monthly: 0, dir: 'stable' } }; }
+function projectNameFromData(data, fallback = 'Untitled Project') { return data?.subject?.address || data?.subject?.city || fallback; }
+
+function DashboardShell({ persona, session, demoMode = false }) {
+  const initial = demoMode ? demoWorkspace() : emptyWorkspace();
   const [tab, setTab] = useState('Dashboard');
   const [collapsed, setCollapsed] = useState(false);
-  const [subject, setSubject] = useState({});
-  const [sales, setSales] = useState([]);
-  const [selectedComps, setSelectedComps] = useState([]);
-  const [adjRows, setAdjRows] = useState([]);
-  const [glaNarData, setGlaNarData] = useState({ rate: 0, method: '' });
-  const [mtNarData, setMtNarData] = useState({ monthly: 0, dir: 'stable' });
+  const [subject, setSubject] = useState(initial.subject);
+  const [sales, setSales] = useState(initial.sales);
+  const [selectedComps, setSelectedComps] = useState(initial.selectedComps);
+  const [adjRows, setAdjRows] = useState(initial.adjRows);
+  const [glaNarData, setGlaNarData] = useState(initial.glaNarData);
+  const [mtNarData, setMtNarData] = useState(initial.mtNarData);
 
   const [cloudStatus, setCloudStatus] = useState('');
+  const [projects, setProjects] = useState([]);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [currentProjectName, setCurrentProjectName] = useState(demoMode ? 'Demo Project' : '');
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const user = session?.user;
   const isAppraiser = persona === 'appraiser';
   const tabs = isAppraiser ? appraiserTabs : agentTabs;
-  useEffect(() => { const parts = location.pathname.split('/'); if (parts[2]) { const match = tabs.find(t => slug(t) === parts[2]); if (match) setTab(match); } }, [persona]);
-  function setRoute(t) { setTab(t); window.history.pushState({}, '', `/${persona}${t === 'Dashboard' ? '' : '/' + slug(t)}`); }
+
+  useEffect(() => {
+    const parts = location.pathname.split('/');
+    const routePart = demoMode ? parts[3] : parts[2];
+    if (routePart) {
+      const match = tabs.find(t => slug(t) === routePart);
+      if (match) setTab(match);
+    }
+  }, [persona, demoMode]);
+
+  useEffect(() => {
+    if (!demoMode && user) fetchProjects();
+  }, [demoMode, user?.id, persona]);
+
+  function setRoute(t) {
+    setTab(t);
+    const base = demoMode ? `/demo/${persona}` : `/${persona}`;
+    window.history.pushState({}, '', `${base}${t === 'Dashboard' ? '' : '/' + slug(t)}`);
+  }
 
   function workspacePayload() {
     return { subject, sales, selectedComps, adjRows, glaNarData, mtNarData, savedAt: new Date().toISOString() };
   }
-  async function saveCloud() {
-    if (!user) { setCloudStatus('Log in before saving.'); return; }
-    setCloudStatus('Saving workspace…');
-    const { error } = await supabase.from('valora_workspaces').upsert({
-      user_id: user.id,
-      persona,
-      data: workspacePayload(),
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,persona' });
-    setCloudStatus(error ? error.message : 'Workspace saved to Supabase.');
-  }
-  async function loadCloud() {
-    if (!user) { setCloudStatus('Log in before loading.'); return; }
-    setCloudStatus('Loading workspace…');
-    const { data, error } = await supabase.from('valora_workspaces').select('data').eq('user_id', user.id).eq('persona', persona).maybeSingle();
-    if (error) { setCloudStatus(error.message); return; }
-    if (!data?.data) { setCloudStatus('No saved workspace found yet.'); return; }
-    const w = data.data;
-    setSubject(w.subject || defaultSubject);
-    setSales(Array.isArray(w.sales) ? w.sales : sampleSales);
+
+  function applyWorkspace(data) {
+    const w = data || emptyWorkspace();
+    setSubject(w.subject || emptySubject());
+    setSales(Array.isArray(w.sales) ? w.sales : []);
     setSelectedComps(Array.isArray(w.selectedComps) ? w.selectedComps : []);
     setAdjRows(Array.isArray(w.adjRows) ? w.adjRows : []);
     setGlaNarData(w.glaNarData || { rate: 0, method: '' });
     setMtNarData(w.mtNarData || { monthly: 0, dir: 'stable' });
-    setCloudStatus(`Loaded workspace saved ${w.savedAt ? new Date(w.savedAt).toLocaleString() : 'previously'}.`);
   }
+
+  async function fetchProjects() {
+    if (!user) return;
+    setProjectsLoading(true);
+    const { data, error } = await supabase
+      .from('valora_projects')
+      .select('id,name,persona,data,created_at,updated_at')
+      .eq('user_id', user.id)
+      .eq('persona', persona)
+      .order('updated_at', { ascending: false });
+    setProjectsLoading(false);
+    if (error) { setCloudStatus(error.message); return; }
+    setProjects(data || []);
+  }
+
+  function newProject() {
+    const name = window.prompt('Project name?', subject.address || currentProjectName || 'New Project');
+    if (name === null) return;
+    applyWorkspace(emptyWorkspace());
+    setCurrentProjectId(null);
+    setCurrentProjectName(name.trim() || 'New Project');
+    setCloudStatus('New blank project started. Add a subject/import sales, then click Save Project.');
+    setRoute(persona === 'appraiser' ? 'Subject Property' : 'Property Overview');
+  }
+
+  async function saveProject() {
+    if (demoMode) { setCloudStatus('Demo mode does not save. Sign up or log in to save real projects.'); return; }
+    if (!user) { setCloudStatus('Log in before saving.'); return; }
+    const payload = workspacePayload();
+    const name = (currentProjectName || projectNameFromData(payload, '') || window.prompt('Project name?', 'New Project') || '').trim();
+    if (!name) { setCloudStatus('Project was not saved because it needs a name.'); return; }
+    setCloudStatus('Saving project…');
+
+    if (currentProjectId) {
+      const { error } = await supabase
+        .from('valora_projects')
+        .update({ name, data: payload, updated_at: new Date().toISOString() })
+        .eq('id', currentProjectId)
+        .eq('user_id', user.id);
+      if (error) { setCloudStatus(error.message); return; }
+      setCurrentProjectName(name);
+      setCloudStatus('Project saved.');
+    } else {
+      const { data, error } = await supabase
+        .from('valora_projects')
+        .insert({ user_id: user.id, persona, name, data: payload })
+        .select('id,name')
+        .single();
+      if (error) { setCloudStatus(error.message); return; }
+      setCurrentProjectId(data.id);
+      setCurrentProjectName(data.name);
+      setCloudStatus('Project created and saved.');
+    }
+    fetchProjects();
+  }
+
+  function openProject(project) {
+    applyWorkspace(project.data || emptyWorkspace());
+    setCurrentProjectId(project.id);
+    setCurrentProjectName(project.name);
+    setCloudStatus(`Opened ${project.name}.`);
+    setRoute(persona === 'appraiser' ? 'Subject Property' : 'Property Overview');
+  }
+
+  async function deleteProject(project) {
+    if (demoMode) return;
+    if (!window.confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('valora_projects').delete().eq('id', project.id).eq('user_id', user.id);
+    if (error) { setCloudStatus(error.message); return; }
+    if (currentProjectId === project.id) {
+      applyWorkspace(emptyWorkspace());
+      setCurrentProjectId(null);
+      setCurrentProjectName('');
+    }
+    setCloudStatus(`Deleted ${project.name}.`);
+    fetchProjects();
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     navigate('/login');
   }
+
+  const activeProjectLabel = demoMode ? 'Demo Mode' : currentProjectName || 'No project open';
+
   return (
     <div className={`dashboard-shell ${collapsed ? 'is-collapsed' : ''}`}>
       <aside className="sidebar">
         <Logo compact={collapsed} />
         <div className="mode-toggle">
-          <button className={isAppraiser ? 'active' : ''} onClick={() => navigate('/appraiser')}>Appraiser</button>
-          <button className={!isAppraiser ? 'active' : ''} onClick={() => navigate('/agent')}>Agent/Broker</button>
+          <button className={isAppraiser ? 'active' : ''} onClick={() => navigate(demoMode ? '/demo/appraiser' : '/appraiser')}>Appraiser</button>
+          <button className={!isAppraiser ? 'active' : ''} onClick={() => navigate(demoMode ? '/demo/agent' : '/agent')}>Agent/Broker</button>
         </div>
         <div className="nav-section-label">{isAppraiser ? 'Appraiser Workflow' : 'Agent Workflow'}</div>
         <nav className="side-nav">
@@ -192,21 +284,32 @@ function DashboardShell({ persona, session }) {
       <main className="dashboard-main">
         <header className="topbar">
           <button className="icon-btn" onClick={() => setCollapsed(v => !v)}>☰</button>
-          <div><strong>{isAppraiser ? 'Appraiser Workspace' : 'Agent/Broker Workspace'}</strong><span>{isAppraiser ? 'Defensible valuation support' : 'Listing and pricing intelligence'}</span></div>
-          <div className="topbar-actions"><button className="btn ghost" onClick={loadCloud}>Load</button><button className="btn gold" onClick={saveCloud}>Save</button><button className="btn ghost" onClick={signOut}>Sign out</button><button className="avatar">{(user?.email || 'VQ').slice(0, 2).toUpperCase()}</button></div>
+          <div><strong>{isAppraiser ? 'Appraiser Workspace' : 'Agent/Broker Workspace'}</strong><span>{activeProjectLabel}</span></div>
+          <div className="topbar-actions">
+            {demoMode ? <>
+              <Link className="btn ghost" to="/signup">Start free</Link>
+              <Link className="btn gold" to="/login">Log in</Link>
+            </> : <>
+              <button className="btn ghost" onClick={newProject}>New Project</button>
+              <button className="btn gold" onClick={saveProject}>Save Project</button>
+              <button className="btn ghost" onClick={() => setRoute('Projects')}>Open</button>
+              <button className="btn ghost" onClick={signOut}>Sign out</button>
+              <button className="avatar">{(user?.email || 'VQ').slice(0, 2).toUpperCase()}</button>
+            </>}
+          </div>
         </header>
-        {cloudStatus && <div className="status-banner" style={{ margin: '12px 24px 0' }}>{cloudStatus}</div>}
-        <Workspace persona={persona} tab={tab} setRoute={setRoute} subject={subject} setSubject={setSubject} sales={sales} setSales={setSales} selectedComps={selectedComps} setSelectedComps={setSelectedComps} adjRows={adjRows} setAdjRows={setAdjRows} glaNarData={glaNarData} setGlaNarData={setGlaNarData} mtNarData={mtNarData} setMtNarData={setMtNarData} />
+        {cloudStatus && <div className={`status-banner ${cloudStatus.toLowerCase().includes('saved') || cloudStatus.toLowerCase().includes('opened') || cloudStatus.toLowerCase().includes('created') ? 'success' : ''}`} style={{ margin: '12px 24px 0' }}>{cloudStatus}</div>}
+        <Workspace persona={persona} demoMode={demoMode} tab={tab} setRoute={setRoute} subject={subject} setSubject={setSubject} sales={sales} setSales={setSales} selectedComps={selectedComps} setSelectedComps={setSelectedComps} adjRows={adjRows} setAdjRows={setAdjRows} glaNarData={glaNarData} setGlaNarData={setGlaNarData} mtNarData={mtNarData} setMtNarData={setMtNarData} projects={projects} projectsLoading={projectsLoading} currentProjectId={currentProjectId} currentProjectName={currentProjectName} newProject={newProject} openProject={openProject} deleteProject={deleteProject} saveProject={saveProject} fetchProjects={fetchProjects} />
       </main>
     </div>
   );
 }
 
-function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSales, selectedComps, setSelectedComps, adjRows, setAdjRows, glaNarData, setGlaNarData, mtNarData, setMtNarData }) {
-  if (tab === 'Dashboard') return persona === 'appraiser' ? <AppraiserHome sales={sales} setRoute={setRoute} /> : <AgentHome sales={sales} setRoute={setRoute} />;
-  if (tab === 'Projects') return <Projects persona={persona} />;
+function Workspace({ persona, demoMode, tab, setRoute, subject, setSubject, sales, setSales, selectedComps, setSelectedComps, adjRows, setAdjRows, glaNarData, setGlaNarData, mtNarData, setMtNarData, projects, projectsLoading, currentProjectId, currentProjectName, newProject, openProject, deleteProject, saveProject, fetchProjects }) {
+  if (tab === 'Dashboard') return persona === 'appraiser' ? <AppraiserHome sales={sales} projects={projects} demoMode={demoMode} setRoute={setRoute} newProject={newProject} /> : <AgentHome sales={sales} projects={projects} demoMode={demoMode} setRoute={setRoute} newProject={newProject} />;
+  if (tab === 'Projects') return <Projects persona={persona} demoMode={demoMode} projects={projects} projectsLoading={projectsLoading} currentProjectId={currentProjectId} newProject={newProject} openProject={openProject} deleteProject={deleteProject} fetchProjects={fetchProjects} />;
   if (tab === 'Subject Property' || tab === 'Property Overview') return <SubjectForm persona={persona} subject={subject} setSubject={setSubject} />;
-  if (tab.includes('Import')) return <ImportData persona={persona} sales={sales} setSales={setSales} />;
+  if (tab.includes('Import')) return <ImportData persona={persona} sales={sales} setSales={setSales} demoMode={demoMode} />;
   if (tab === 'Q/C Analyzer') return <QCAnalyzer sales={sales} setSales={setSales} subject={subject} />;
   if (tab === 'Market Conditions' || tab === 'Market Snapshot') return <MarketConditions persona={persona} sales={sales} setMtNarData={setMtNarData} />;
   if (tab === 'GLA Study') return <GLAStudy sales={sales} subject={subject} setGlaNarData={setGlaNarData} />;
@@ -216,7 +319,7 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
   if (tab === 'Concessions') return <Concessions sales={sales} />;
   if (tab === 'Reconciliation') return <Reconciliation adjRows={adjRows} />;
   if (tab === 'Narrative') return <NarrativeBuilder subject={subject} sales={sales} glaNarData={glaNarData} mtNarData={mtNarData} />;
-  if (tab === 'Export Workfile') return <ExportWorkfile subject={subject} sales={sales} adjRows={adjRows} glaNarData={glaNarData} mtNarData={mtNarData} />;
+  if (tab === 'Export Workfile') return <ExportWorkfile subject={subject} sales={sales} adjRows={adjRows} glaNarData={glaNarData} mtNarData={mtNarData} saveProject={saveProject} demoMode={demoMode} />;
   if (tab === 'Pricing Strategy') return <PricingStrategy />;
   if (tab === 'Seller Net Sheet') return <SellerNet />;
   if (tab.includes('Presentation') || tab === 'CMA Export') return <ExportLike title={tab} items={['Pricing snapshot', 'Active/pending/sold summary', 'Selected comps', 'Seller net sheet', 'Talking points']} />;
@@ -227,34 +330,44 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
 
 // ── KPI + home ────────────────────────────────────────────────────────────────
 function KPI({ label, value, helper }) { return <div className="kpi"><div className="kpi-icon">✦</div><div><span>{label}</span><strong>{value}</strong><small>{helper}</small></div></div> }
-function AppraiserHome({ sales, setRoute }) {
+function AppraiserHome({ sales, projects = [], demoMode, setRoute, newProject }) {
+  const projectCount = demoMode ? 5 : projects.length;
   return <div className="dash-page">
-    <section className="welcome"><p className="eyebrow">Good morning</p><h1>Appraiser intelligence workspace</h1><p>Build support for Q/C analysis, market conditions, GLA study, comparable selection, site value, adjustments, concessions, reconciliation, and workfile exports.</p></section>
-    <div className="kpi-row"><KPI label="Active Projects" value="7" helper="2 due this week" /><KPI label="Imported Sales" value={sales.length} helper="current project" /><KPI label="Reports Generated" value="9" helper="workfile PDFs" /><KPI label="Last Market Study" value="May 18" helper="rolling trend ready" /></div>
-    <div className="two-col"><ProjectTable /><QuickActions persona="appraiser" setRoute={setRoute} /></div>
+    <section className="welcome"><p className="eyebrow">{demoMode ? 'Interactive Demo' : 'Good morning'}</p><h1>Appraiser intelligence workspace</h1><p>{demoMode ? 'Explore a fully loaded example without signing up. Real signed-in workspaces start blank and save only your projects.' : 'Create a project, import MLS data, run the tools, and save your work to Supabase.'}</p></section>
+    <div className="kpi-row"><KPI label="Projects" value={projectCount} helper={demoMode ? 'demo examples' : 'saved to your account'} /><KPI label="Imported Sales" value={sales.length} helper="current project" /><KPI label="Current Project" value={sales.length ? 'Active' : 'Blank'} helper={sales.length ? 'data loaded' : 'start or open one'} /><KPI label="Storage" value={demoMode ? 'Demo' : 'Cloud'} helper={demoMode ? 'not saved' : 'Supabase'} /></div>
+    <div className="two-col"><ProjectTable projects={projects} demoMode={demoMode} setRoute={setRoute} /><QuickActions persona="appraiser" setRoute={setRoute} newProject={newProject} demoMode={demoMode} /></div>
     <section className="panel-card"><h2>Professional Use Only</h2><p className="muted">ValoraIQ provides market analysis and valuation support. Appraisers remain responsible for all appraisal conclusions.</p></section>
   </div>;
 }
-function AgentHome({ sales, setRoute }) {
+function AgentHome({ sales, projects = [], demoMode, setRoute, newProject }) {
   return <div className="dash-page">
-    <section className="welcome"><p className="eyebrow">Good morning</p><h1>Agent/Broker pricing workspace</h1><p>Build better listing conversations with market snapshots, comp ranking, pricing strategy, seller net, and CMA exports.</p></section>
-    <div className="kpi-row"><KPI label="Listing Projects" value="11" helper="4 active presentations" /><KPI label="Imported Records" value={sales.length} helper="active/pending/sold" /><KPI label="CMA Exports" value="14" helper="this month" /><KPI label="Avg DOM" value="18" helper="sample market" /></div>
-    <div className="two-col"><PricingStrategy compact /><QuickActions persona="agent" setRoute={setRoute} /></div>
+    <section className="welcome"><p className="eyebrow">{demoMode ? 'Interactive Demo' : 'Good morning'}</p><h1>Agent/Broker pricing workspace</h1><p>{demoMode ? 'Explore a fully loaded example without signing up. Real signed-in workspaces start blank and save only your projects.' : 'Create a CMA/listing project, import market data, and save it to your account.'}</p></section>
+    <div className="kpi-row"><KPI label="Projects" value={demoMode ? 5 : projects.length} helper={demoMode ? 'demo examples' : 'saved to your account'} /><KPI label="Imported Records" value={sales.length} helper="current project" /><KPI label="Current Project" value={sales.length ? 'Active' : 'Blank'} helper={sales.length ? 'data loaded' : 'start or open one'} /><KPI label="Storage" value={demoMode ? 'Demo' : 'Cloud'} helper={demoMode ? 'not saved' : 'Supabase'} /></div>
+    <div className="two-col"><PricingStrategy compact /><QuickActions persona="agent" setRoute={setRoute} newProject={newProject} demoMode={demoMode} /></div>
   </div>;
 }
-function ProjectTable() { const rows = [['123 Maple Street', 'Appraisal', 'In Progress', '$438k'], ['456 Oak Avenue', 'CMA', 'Review', '$510k'], ['789 Pine Road', 'Market Study', 'Draft', '$425k']]; return <div className="table-card"><div className="card-head"><h2>Recent Projects</h2><button>View all →</button></div><table><thead><tr><th>Project</th><th>Type</th><th>Status</th><th>Indication</th></tr></thead><tbody>{rows.map(r => <tr key={r[0]}><td><b>{r[0]}</b><span>Updated recently</span></td><td>{r[1]}</td><td><em>{r[2]}</em></td><td>{r[3]}</td></tr>)}</tbody></table></div> }
-function QuickActions({ persona, setRoute }) {
+function ProjectTable({ projects = [], demoMode, setRoute }) {
+  const demoRows = [['123 Maple Street', 'Appraisal', 'In Progress', '$438k'], ['456 Oak Avenue', 'CMA', 'Review', '$510k'], ['789 Pine Road', 'Market Study', 'Draft', '$425k']];
+  const rows = demoMode ? demoRows : projects.slice(0, 3).map(p => [p.name, p.persona === 'agent' ? 'CMA' : 'Appraisal', 'Saved', p.updated_at ? new Date(p.updated_at).toLocaleDateString() : '—']);
+  return <div className="table-card"><div className="card-head"><h2>{demoMode ? 'Demo Recent Projects' : 'Recent Projects'}</h2><button onClick={() => setRoute('Projects')}>View all →</button></div>{rows.length ? <table><thead><tr><th>Project</th><th>Type</th><th>Status</th><th>{demoMode ? 'Indication' : 'Updated'}</th></tr></thead><tbody>{rows.map(r => <tr key={r[0]}><td><b>{r[0]}</b><span>{demoMode ? 'Demo data' : 'Saved project'}</span></td><td>{r[1]}</td><td><em>{r[2]}</em></td><td>{r[3]}</td></tr>)}</tbody></table> : <div className="status-banner">No saved projects yet. Click New Project to start one.</div>}</div>
+}
+function QuickActions({ persona, setRoute, newProject, demoMode }) {
   const actions = persona === 'appraiser'
     ? [['New Appraisal Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Run Q/C Analyzer', 'Q/C Analyzer'], ['Run Market Conditions', 'Market Conditions'], ['Run GLA Study', 'GLA Study'], ['Rank Comparables', 'Comp Ranking'], ['Export Workfile PDF', 'Export Workfile']]
     : [['New CMA Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Rank Comparables', 'Comp Ranking'], ['Build Seller Presentation', 'Listing Presentation'], ['Create Seller Net Sheet', 'Seller Net Sheet']];
-  return <div className="quick-card"><h2>Quick Actions</h2>{actions.map(([label, target]) => <button key={label} onClick={() => setRoute(target)}>{label}<span>›</span></button>)}</div>;
+  return <div className="quick-card"><h2>Quick Actions</h2>{actions.map(([label, target]) => <button key={label} onClick={() => label.startsWith('New') && !demoMode && newProject ? newProject() : setRoute(target)}>{label}<span>›</span></button>)}</div>;
 }
 
 // ── Projects ──────────────────────────────────────────────────────────────────
-function Projects({ persona }) {
-  const projects = ['123 Maple Street', '456 Oak Avenue', '789 Pine Road', '321 Elm Drive', '654 Cedar Lane'];
-  const openPath = persona === 'appraiser' ? `/${persona}/subject-property` : `/${persona}/property-overview`;
-  return <div className="dash-page"><section className="panel-card row-between"><div><p className="eyebrow">Projects</p><h1>{persona === 'appraiser' ? 'Appraisal Projects' : 'CMA & Listing Projects'}</h1><p className="muted max">These are local demo projects for now. Supabase will later persist projects, uploads, notes, exports, and team access.</p></div><button className="btn gold" onClick={() => navigate(openPath)}>+ New Project</button></section><div className="project-grid">{projects.map((proj, i) => <article className="project-card" key={proj}><span>{persona === 'appraiser' ? 'Appraisal' : i % 2 ? 'Listing CMA' : 'Seller Strategy'}</span><h3>{proj}</h3><p>Updated {i + 1} day{i ? 's' : ''} ago</p><div><em>{i % 3 === 0 ? 'In Progress' : i % 3 === 1 ? 'Review' : 'Draft'}</em><button className="btn ghost small" onClick={() => navigate(openPath)}>Open</button></div></article>)}</div></div>;
+function Projects({ persona, demoMode, projects = [], projectsLoading, currentProjectId, newProject, openProject, deleteProject, fetchProjects }) {
+  const demoProjects = ['123 Maple Street', '456 Oak Avenue', '789 Pine Road', '321 Elm Drive', '654 Cedar Lane'].map((name, i) => ({ id: `demo-${i}`, name, persona, updated_at: new Date(Date.now() - i * 86400000).toISOString(), data: demoWorkspace() }));
+  const list = demoMode ? demoProjects : projects;
+  return <div className="dash-page">
+    <section className="panel-card row-between"><div><p className="eyebrow">Projects</p><h1>{persona === 'appraiser' ? 'Appraisal Projects' : 'CMA & Listing Projects'}</h1><p className="muted max">{demoMode ? 'These are demo examples only. Sign up to create real saved projects.' : 'Create, open, and delete your saved Supabase projects. Opening a project loads its subject, sales, Q/C edits, selected comps, adjustments, and narrative data.'}</p></div><div className="btn-row"><button className="btn gold" onClick={() => demoMode ? navigate('/signup') : newProject()}>{demoMode ? 'Start Real Project' : '+ New Project'}</button>{!demoMode && <button className="btn ghost" onClick={fetchProjects}>Refresh</button>}</div></section>
+    {projectsLoading && <section className="panel-card"><p className="muted">Loading projects…</p></section>}
+    {!projectsLoading && !list.length && <section className="panel-card"><h2>No projects yet</h2><p className="muted">Click <strong>+ New Project</strong>, enter a project name, then add your subject and import MLS data.</p></section>}
+    <div className="project-grid">{list.map((proj, i) => <article className={`project-card ${currentProjectId === proj.id ? 'selected' : ''}`} key={proj.id}><span>{persona === 'appraiser' ? 'Appraisal' : i % 2 ? 'Listing CMA' : 'Seller Strategy'}</span><h3>{proj.name}</h3><p>{demoMode ? 'Demo example' : `Updated ${proj.updated_at ? new Date(proj.updated_at).toLocaleString() : '—'}`}</p><div><em>{currentProjectId === proj.id ? 'Open' : demoMode ? 'Demo' : 'Saved'}</em><button className="btn ghost small" onClick={() => demoMode ? null : openProject(proj)}>{demoMode ? 'Demo Only' : 'Open'}</button>{!demoMode && <button className="btn ghost small" onClick={() => deleteProject(proj)}>Delete</button>}</div></article>)}</div>
+  </div>;
 }
 
 // ── Subject form ──────────────────────────────────────────────────────────────
@@ -268,8 +381,8 @@ function SubjectForm({ persona, subject, setSubject }) {
 }
 
 // ── MLS Import ────────────────────────────────────────────────────────────────
-function ImportData({ persona, sales, setSales }) {
-  const [headers, setHeaders] = useState([]); const [rawRows, setRawRows] = useState([]); const [mapping, setMapping] = useState({}); const [preview, setPreview] = useState(sales); const [fileName, setFileName] = useState('Demo sales'); const [importStatus, setImportStatus] = useState('Upload a CSV to review and remap fields before the data is used.'); const [committed, setCommitted] = useState(false); const [geocoding, setGeocoding] = useState(false);
+function ImportData({ persona, sales, setSales, demoMode = false }) {
+  const [headers, setHeaders] = useState([]); const [rawRows, setRawRows] = useState([]); const [mapping, setMapping] = useState({}); const [preview, setPreview] = useState(sales); const [fileName, setFileName] = useState(demoMode ? 'Demo sales' : ''); const [importStatus, setImportStatus] = useState('Upload a CSV to review and remap fields before the data is used.'); const [committed, setCommitted] = useState(false); const [geocoding, setGeocoding] = useState(false);
   const required = ['sale_price', 'sale_date', 'gla'];
   const mappedOk = required.every(f => mapping[f] !== undefined && mapping[f] !== '');
   async function handle(e) { const f = e.target.files?.[0]; if (!f) return; const text = await f.text(); const parsed = parseCSVMatrix(text); const m = autoMapHeaders(parsed.headers); setHeaders(parsed.headers); setRawRows(parsed.rows); setMapping(m); setPreview(rowsFromMapping(parsed.headers, parsed.rows, m)); setFileName(f.name); setCommitted(false); setImportStatus(`Loaded ${f.name}. Review the column mapping below before applying.`); e.target.value = ''; }
@@ -294,7 +407,7 @@ function ImportData({ persona, sales, setSales }) {
       <p className="eyebrow">MLS Import</p><h1>{persona === 'appraiser' ? 'Import appraisal sales data' : 'Import CMA market data'}</h1>
       <p className="muted max">Upload your MLS CSV, verify the field mapping, inspect the preview, then apply it.</p>
       <label className="upload-box"><strong>Click to upload MLS CSV</strong><span>After upload, the mapping review panel opens below.</span><input type="file" accept=".csv,text/csv" onChange={handle} /></label>
-      <div className="btn-row"><button className="btn ghost" onClick={loadDemo}>Load Demo Sales</button>{fileName && <span className="muted">Current file: {fileName}</span>}</div>
+      <div className="btn-row">{demoMode && <button className="btn ghost" onClick={loadDemo}>Load Demo Sales</button>}{fileName && <span className="muted">Current file: {fileName}</span>}</div>
       <div className={`status-banner ${committed ? 'success' : ''}`}>{importStatus}</div>
     </section>
     {headers.length > 0 && <section className="panel-card mapping-panel">
@@ -564,7 +677,7 @@ function NarrativeBuilder({ subject, sales, glaNarData, mtNarData }) {
 }
 
 // ── Export Workfile ───────────────────────────────────────────────────────────
-function ExportWorkfile({ subject, sales, adjRows, glaNarData, mtNarData }) {
+function ExportWorkfile({ subject, sales, adjRows, glaNarData, mtNarData, saveProject, demoMode = false }) {
   const [sections, setSections] = useState({ subject: true, market: true, gla: true, adjustments: true, data: true, narrative: true });
   function toggle(k) { setSections(s => ({ ...s, [k]: !s[k] })); }
   function saveLocal() { const w = { subject, importedSales: sales, adjRows, glaNarData, mtNarData, savedAt: new Date().toISOString() }; localStorage.setItem('valoraiqWorkfile', JSON.stringify(w)); alert('Workfile saved to this browser.'); }
@@ -586,7 +699,7 @@ function ExportWorkfile({ subject, sales, adjRows, glaNarData, mtNarData }) {
   }
   return <div className="dash-page">
     <section className="panel-card"><p className="eyebrow">Workfile Export</p><h1>Save / Export / Print Workfile</h1><p className="muted max">Save the session locally, download a JSON workfile, restore a previous save, or print a clean PDF for your appraisal workfile.</p>
-      <div className="btn-row"><button className="btn gold" onClick={saveLocal}>Save to Browser</button><button className="btn ghost" onClick={restoreLocal}>Restore Browser Save</button><button className="btn ghost" onClick={downloadJSON}>Download JSON ⇩</button></div>
+      <div className="btn-row">{!demoMode && <button className="btn gold" onClick={saveProject}>Save Project to Cloud</button>}<button className="btn ghost" onClick={saveLocal}>Save to Browser</button><button className="btn ghost" onClick={restoreLocal}>Restore Browser Save</button><button className="btn ghost" onClick={downloadJSON}>Download JSON ⇩</button></div>
       <div className="status-banner" style={{ marginTop: 12 }}>Browser saves stay in localStorage on this device. JSON exports contain subject and sales data — store like any confidential workfile.</div>
     </section>
     <section className="panel-card"><h2>Print / Save PDF</h2><p className="muted" style={{ marginBottom: 14 }}>Select sections to include. In the browser print window choose <strong>Save as PDF</strong>.</p>
@@ -622,6 +735,8 @@ function App() {
   }, []);
 
   if (!authReady) return <main className="auth-page"><section className="auth-card"><h1>Loading ValoraIQ…</h1></section></main>;
+  if (path.startsWith('/demo/appraiser')) return <DashboardShell persona="appraiser" demoMode />;
+  if (path.startsWith('/demo/agent')) return <DashboardShell persona="agent" demoMode />;
   if (path === '/login') return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
   if (path === '/signup') return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="signup" />;
   if (path.startsWith('/appraiser')) return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
