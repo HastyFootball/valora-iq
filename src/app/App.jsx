@@ -27,7 +27,7 @@ function buildAddress(record) { return [record.address, record.city, record.stat
 async function geocodeAddress(parts) {
   const q = Array.isArray(parts) ? parts.filter(Boolean).join(', ') : String(parts || '');
   if (!q.trim()) return null;
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+  const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
   const d = await r.json();
   return d?.[0] ? { lat: Number(d[0].lat), lon: Number(d[0].lon), geocode_status: 'geocoded' } : { geocode_status: 'not_found' };
 }
