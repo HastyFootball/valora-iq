@@ -409,8 +409,15 @@ function ImportData({ persona, sales, setSales, demoMode = false }) {
     <section className="panel-card">
       <p className="eyebrow">MLS Import</p><h1>{persona === 'appraiser' ? 'Import appraisal sales data' : 'Import CMA market data'}</h1>
       <p className="muted max">Upload your MLS CSV, verify the field mapping, inspect the preview, then apply it.</p>
-      <label className="upload-box"><strong>Click to upload MLS CSV</strong><span>After upload, the mapping review panel opens below.</span><input type="file" accept=".csv,text/csv" onChange={handle} /></label>
-      <div className="btn-row">{demoMode && <button className="btn ghost" onClick={loadDemo}>Load Demo Sales</button>}{fileName && <span className="muted">Current file: {fileName}</span>}</div>
+      {demoMode ? (
+  <div className="upload-box locked">
+    <strong>CSV import is not available in demo mode</strong>
+    <span>Demo explores pre-loaded sample data. <Link to="/signup">Create a free account</Link> to import your own MLS CSV files.</span>
+  </div>
+) : (
+  <label className="upload-box"><strong>Click to upload MLS CSV</strong><span>After upload, the mapping review panel opens below.</span><input type="file" accept=".csv,text/csv" onChange={handle} /></label>
+)}
+<div className="btn-row">{demoMode && <button className="btn ghost" onClick={loadDemo}>Load Demo Sales</button>}{fileName && <span className="muted">Current file: {fileName}</span>}</div>
       <div className={`status-banner ${committed ? 'success' : ''}`}>{importStatus}</div>
     </section>
     {headers.length > 0 && <section className="panel-card mapping-panel">
