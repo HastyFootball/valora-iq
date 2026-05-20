@@ -22,6 +22,36 @@ function ratingNum(r) { if (!r) return null; const m = String(r).match(/([1-6])(
 function distanceMiles(lat1, lon1, lat2, lon2) { if (!lat1 || !lon1 || !lat2 || !lon2) return null; const R = 3958.8, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); }
 function linReg(pairs) { const n = pairs.length; const sx = pairs.reduce((a, p) => a + p.x, 0); const sy = pairs.reduce((a, p) => a + p.y, 0); const sxy = pairs.reduce((a, p) => a + p.x * p.y, 0); const sx2 = pairs.reduce((a, p) => a + p.x * p.x, 0); const sy2 = pairs.reduce((a, p) => a + p.y * p.y, 0); const denom = n * sx2 - sx * sx; const b = denom !== 0 ? (n * sxy - sx * sy) / denom : 0; const a2 = (sy - b * sx) / n; const r2num = Math.pow(n * sxy - sx * sy, 2); const r2den = (n * sx2 - sx * sx) * (n * sy2 - sy * sy); const r2 = r2den > 0 ? r2num / r2den : 0; return { a: a2, b, r2, n }; }
 function scoreComp(s, subj, w) { let score = 0, tw = 0; function add(raw, wt) { score += raw * wt; tw += wt; } const glaD = subj.gla && s.gla_n ? Math.abs(s.gla_n - subj.gla) / subj.gla : 1; add(Math.max(0, 1 - glaD * 2), w.gla || 0); const dist = distanceMiles(subj.lat, subj.lon, s.lat, s.lon); add(dist !== null ? Math.max(0, 1 - dist / 5) : 0.3, w.distance || 0); const dMonths = s.sale_date ? monthsBetween(subj.effdate || new Date().toISOString().slice(0, 10), s.sale_date) : 12; add(Math.max(0, 1 - dMonths / 24), w.date || 0); const siteD = subj.site && s.site_sf_n ? Math.abs(s.site_sf_n - subj.site) / subj.site : 1; add(Math.max(0, 1 - siteD * 2), w.site || 0); const ageD = subj.year && s.year_built_n ? Math.abs(s.year_built_n - subj.year) / 20 : 1; add(Math.max(0, 1 - ageD), w.year || 0); add(s.garage === subj.garage ? 1 : 0.3, w.garage || 0); add(s.basement === subj.basement ? 1 : 0.3, w.basement || 0); add(s.pool === subj.pool ? 1 : 0.3, w.pool || 0); const qn = ratingNum(s.quality), qs = ratingNum(subj.qual); add(qn && qs ? Math.max(0, 1 - Math.abs(qn - qs) / 3) : 0.3, w.qual || 0); const cn = ratingNum(s.condition), cs = ratingNum(subj.cond); add(cn && cs ? Math.max(0, 1 - Math.abs(cn - cs) / 3) : 0.3, w.cond || 0); return tw > 0 ? (score / tw) * 100 : 0; }
+function buildAddress(record) { return [record.address, record.city, record.state, record.zip].filter(Boolean).join(', '); }
+async function geocodeAddress(parts) {
+  const q = Array.isArray(parts) ? parts.filter(Boolean).join(', ') : String(parts || '');
+  if (!q.trim()) return null;
+  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+  const d = await r.json();
+  return d?.[0] ? { lat: Number(d[0].lat), lon: Number(d[0].lon), geocode_status: 'geocoded' } : { geocode_status: 'not_found' };
+}
+async function geocodeMissingSales(records, onProgress) {
+  const updated = [];
+  let attempted = 0, geocoded = 0, skipped = 0;
+  for (let i = 0; i < records.length; i++) {
+    const s = records[i];
+    if (s.lat && s.lon) { updated.push({ ...s, geocode_status: s.geocode_status || 'provided' }); skipped++; continue; }
+    const addr = buildAddress(s);
+    if (!addr) { updated.push({ ...s, geocode_status: 'missing_address' }); skipped++; continue; }
+    attempted++;
+    onProgress?.(`Geocoding ${i + 1} of ${records.length}: ${addr}`);
+    try {
+      const res = await geocodeAddress(addr);
+      if (res?.lat && res?.lon) { updated.push({ ...s, ...res }); geocoded++; }
+      else updated.push({ ...s, geocode_status: 'not_found' });
+    } catch {
+      updated.push({ ...s, geocode_status: 'failed' });
+    }
+    await new Promise(r => setTimeout(r, 650));
+  }
+  return { records: updated, attempted, geocoded, skipped };
+}
+
 
 // ── Market series ────────────────────────────────────────────────────────────
 function periodKey(date, quarter = false) { const d = new Date(date); if (isNaN(d)) return null; if (quarter) return `${d.getFullYear()} Q${Math.floor(d.getMonth() / 3) + 1}`; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
@@ -103,7 +133,7 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
   if (tab === 'Projects') return <Projects persona={persona} />;
   if (tab === 'Subject Property' || tab === 'Property Overview') return <SubjectForm persona={persona} subject={subject} setSubject={setSubject} />;
   if (tab.includes('Import')) return <ImportData persona={persona} sales={sales} setSales={setSales} />;
-  if (tab === 'Q/C Analyzer') return <QCAnalyzer sales={sales} subject={subject} />;
+  if (tab === 'Q/C Analyzer') return <QCAnalyzer sales={sales} setSales={setSales} subject={subject} />;
   if (tab === 'Market Conditions' || tab === 'Market Snapshot') return <MarketConditions persona={persona} sales={sales} setMtNarData={setMtNarData} />;
   if (tab === 'GLA Study') return <GLAStudy sales={sales} subject={subject} setGlaNarData={setGlaNarData} />;
   if (tab === 'Comp Ranking') return <CompRanking subject={subject} setSubject={setSubject} sales={sales} setSales={setSales} selectedComps={selectedComps} setSelectedComps={setSelectedComps} />;
@@ -165,11 +195,24 @@ function SubjectForm({ persona, subject, setSubject }) {
 
 // ── MLS Import ────────────────────────────────────────────────────────────────
 function ImportData({ persona, sales, setSales }) {
-  const [headers, setHeaders] = useState([]); const [rawRows, setRawRows] = useState([]); const [mapping, setMapping] = useState({}); const [preview, setPreview] = useState(sales); const [fileName, setFileName] = useState('Demo sales'); const [importStatus, setImportStatus] = useState('Upload a CSV to review and remap fields before the data is used.'); const [committed, setCommitted] = useState(false);
+  const [headers, setHeaders] = useState([]); const [rawRows, setRawRows] = useState([]); const [mapping, setMapping] = useState({}); const [preview, setPreview] = useState(sales); const [fileName, setFileName] = useState('Demo sales'); const [importStatus, setImportStatus] = useState('Upload a CSV to review and remap fields before the data is used.'); const [committed, setCommitted] = useState(false); const [geocoding, setGeocoding] = useState(false);
   const required = ['sale_price', 'sale_date', 'gla'];
   const mappedOk = required.every(f => mapping[f] !== undefined && mapping[f] !== '');
   async function handle(e) { const f = e.target.files?.[0]; if (!f) return; const text = await f.text(); const parsed = parseCSVMatrix(text); const m = autoMapHeaders(parsed.headers); setHeaders(parsed.headers); setRawRows(parsed.rows); setMapping(m); setPreview(rowsFromMapping(parsed.headers, parsed.rows, m)); setFileName(f.name); setCommitted(false); setImportStatus(`Loaded ${f.name}. Review the column mapping below before applying.`); e.target.value = ''; }
-  function apply() { if (!mappedOk) { setImportStatus('Map Sale Price, Sale Date, and GLA before applying. Optional fields improve analysis.'); return; } const records = rowsFromMapping(headers, rawRows, mapping); setPreview(records); setSales(records); setCommitted(true); setImportStatus(`Applied ${records.length} record(s). These records now feed Q/C, Market Conditions, GLA Study, Comp Ranking, Adjustments, Concessions, and exports.`); }
+  async function apply() {
+    if (!mappedOk) { setImportStatus('Map Sale Price, Sale Date, and GLA before applying. Optional fields improve analysis.'); return; }
+    const records = rowsFromMapping(headers, rawRows, mapping);
+    setGeocoding(true);
+    setCommitted(false);
+    setPreview(records);
+    setImportStatus(`Mapped ${records.length} record(s). Geocoding missing coordinates before applying...`);
+    const result = await geocodeMissingSales(records, msg => setImportStatus(msg));
+    setPreview(result.records);
+    setSales(result.records);
+    setCommitted(true);
+    setGeocoding(false);
+    setImportStatus(`Applied ${result.records.length} record(s). Geocoded ${result.geocoded} sale(s), kept ${result.skipped} existing/provided or ungeocodable sale(s), and attempted ${result.attempted} lookup(s). These records now feed Q/C, Market Conditions, GLA Study, Comp Ranking, Adjustments, Concessions, and exports.`);
+  }
   function updateMap(field, value) { const next = { ...mapping, [field]: value }; setMapping(next); setPreview(rowsFromMapping(headers, rawRows, next)); setCommitted(false); setImportStatus('Mapping changed. Review the preview, then click Apply Mapping & Use These Records.'); }
   function loadDemo() { setHeaders([]); setRawRows([]); setMapping({}); setSales(sampleSales); setPreview(sampleSales); setFileName('Demo sales'); setCommitted(true); setImportStatus('Demo sales loaded. Upload a CSV anytime to replace them.'); }
   return <div className="dash-page">
@@ -181,35 +224,98 @@ function ImportData({ persona, sales, setSales }) {
       <div className={`status-banner ${committed ? 'success' : ''}`}>{importStatus}</div>
     </section>
     {headers.length > 0 && <section className="panel-card mapping-panel">
-      <div className="card-head"><div><p className="eyebrow">Step 1</p><h2>Confirm Column Mapping</h2></div><button className="btn gold small" onClick={apply}>Apply Mapping</button></div>
+      <div className="card-head"><div><p className="eyebrow">Step 1</p><h2>Confirm Column Mapping</h2></div><button className="btn gold small" onClick={apply} disabled={geocoding}>{geocoding ? 'Geocoding…' : 'Apply Mapping'}</button></div>
       <div className="mapping-required-row">{required.map(f => <span key={f} className={mapping[f] !== undefined && mapping[f] !== '' ? 'map-ok' : 'map-missing'}>{FIELD_LABELS[f]} {mapping[f] !== undefined && mapping[f] !== '' ? '✓' : 'missing'}</span>)}</div>
       <div className="mapper-grid">{Object.keys(FIELD_LABELS).map(field => { const req = required.includes(field); const selected = mapping[field] ?? ''; const sample = selected !== '' && rawRows[0] ? rawRows[0][Number(selected)] : ''; return <label key={field} className={req ? 'required-map' : ''}>{FIELD_LABELS[field]} {req && <em>Required</em>}<select value={selected} onChange={e => updateMap(field, e.target.value)}><option value="">— Not in CSV —</option>{headers.map((h, i) => <option key={h + i} value={i}>{h}</option>)}</select><small>{sample ? `Sample: ${sample}` : 'No sample mapped'}</small></label>; })}</div>
-      <div className="btn-row"><button className="btn gold" onClick={apply}>Apply Mapping & Use These Records</button><button className="btn ghost" onClick={() => { setHeaders([]); setRawRows([]); setMapping({}); setPreview(sales); setImportStatus('Import cancelled.'); }}>Cancel Import</button></div>
+      <div className="btn-row"><button className="btn gold" onClick={apply} disabled={geocoding}>{geocoding ? 'Geocoding Sales…' : 'Apply Mapping & Use These Records'}</button><button className="btn ghost" onClick={() => { setHeaders([]); setRawRows([]); setMapping({}); setPreview(sales); setImportStatus('Import cancelled.'); }}>Cancel Import</button></div>
     </section>}
     {preview.length > 0 && <section className="table-card">
       <div className="card-head"><div><p className="eyebrow">Step 2</p><h2>{headers.length && !committed ? 'Preview Before Applying' : 'Active Records'}</h2></div><span>{preview.length} rows</span></div>
-      <table><thead><tr><th>Address</th><th>City</th><th>Status</th><th>Price</th><th>Date</th><th>GLA</th><th>Site</th><th>Year</th><th>Q</th><th>C</th></tr></thead><tbody>{preview.slice(0, 25).map((r, i) => <tr key={i}><td>{r.address || '—'}</td><td>{r.city || '—'}</td><td>{r.status || '—'}</td><td>{money(r.sale_price_n)}</td><td>{r.sale_date || '—'}</td><td>{r.gla_n || '—'}</td><td>{r.site_sf_n || '—'}</td><td>{r.year_built_n || '—'}</td><td>{r.quality || '—'}</td><td>{r.condition || '—'}</td></tr>)}</tbody></table>
+      <table><thead><tr><th>Address</th><th>City</th><th>Status</th><th>Price</th><th>Date</th><th>GLA</th><th>Site</th><th>Year</th><th>Q</th><th>C</th><th>Geo</th></tr></thead><tbody>{preview.slice(0, 25).map((r, i) => <tr key={i}><td>{r.address || '—'}</td><td>{r.city || '—'}</td><td>{r.status || '—'}</td><td>{money(r.sale_price_n)}</td><td>{r.sale_date || '—'}</td><td>{r.gla_n || '—'}</td><td>{r.site_sf_n || '—'}</td><td>{r.year_built_n || '—'}</td><td>{r.quality || '—'}</td><td>{r.condition || '—'}</td><td>{r.lat && r.lon ? '✓' : r.geocode_status || '—'}</td></tr>)}</tbody></table>
     </section>}
   </div>;
 }
 
 // ── Q/C Analyzer ──────────────────────────────────────────────────────────────
 function Distribution({ title, data }) { const max = Math.max(1, ...data.map(d => d[1])); return <section className="panel-card"><h2>{title}</h2><div className="bar-list">{data.map(([k, v]) => <div key={k}><span>{k}</span><i><b style={{ width: `${v / max * 100}%` }} /></i><em>{v}</em></div>)}</div></section> }
-function QCAnalyzer({ sales, subject }) {
+function QCAnalyzer({ sales, setSales, subject }) {
   const [ran, setRan] = useState(false);
+  const [reviewEdits, setReviewEdits] = useState({});
+  const [applyMessage, setApplyMessage] = useState('');
+  const ratingOptions = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'];
+  const conditionOptions = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
   const counts = (field, prefix) => ['1', '2', '3', '4', '5', '6'].map(n => { const key = prefix + n; return [key, sales.filter(s => String(s[field] || '').toUpperCase().startsWith(key)).length]; });
   const q = counts('quality', 'Q'), c = counts('condition', 'C');
   const qn = ratingNum(subject.qual), cn = ratingNum(subject.cond);
-  const flagged = sales.map((s, i) => { const missing = !s.quality || !s.condition; const qnum = ratingNum(s.quality), cnum = ratingNum(s.condition); const qdiff = qn && qnum ? Math.abs(qnum - qn) : 0; const cdiff = cn && cnum ? Math.abs(cnum - cn) : 0; const risk = missing ? 95 : (qdiff > 1 || cdiff > 1 ? 80 : (qdiff + cdiff > 0 ? 48 : 18)); const suggestQ = qnum ? `Q${Math.min(6, Math.max(1, Math.round((qnum + (qn || qnum)) / 2)))}` : subject.qual || 'Q3'; const suggestC = cnum ? `C${Math.min(6, Math.max(1, Math.round((cnum + (cn || cnum)) / 2)))}` : subject.cond || 'C3'; return { ...s, _risk: risk, _suggestQ: suggestQ, _suggestC: suggestC, _reason: missing ? 'Missing Q/C data' : qdiff > 1 || cdiff > 1 ? 'Large spread from subject rating' : 'Typical market point' }; }).sort((a, b) => b._risk - a._risk).slice(0, 10);
+  const flagged = sales.map((s, i) => {
+    const key = s._id ?? `${s.address || 'sale'}-${i}`;
+    const missing = !s.quality || !s.condition;
+    const qnum = ratingNum(s.quality), cnum = ratingNum(s.condition);
+    const qdiff = qn && qnum ? Math.abs(qnum - qn) : 0;
+    const cdiff = cn && cnum ? Math.abs(cnum - cn) : 0;
+    const risk = missing ? 95 : (qdiff > 1 || cdiff > 1 ? 80 : (qdiff + cdiff > 0 ? 48 : 18));
+    const suggestQ = qnum ? `Q${Math.min(6, Math.max(1, Math.round((qnum + (qn || qnum)) / 2)))}` : subject.qual || 'Q3';
+    const suggestC = cnum ? `C${Math.min(6, Math.max(1, Math.round((cnum + (cn || cnum)) / 2)))}` : subject.cond || 'C3';
+    return { ...s, _reviewKey: key, _risk: risk, _suggestQ: suggestQ, _suggestC: suggestC, _reason: missing ? 'Missing Q/C data' : qdiff > 1 || cdiff > 1 ? 'Large spread from subject rating' : 'Typical market point' };
+  }).sort((a, b) => b._risk - a._risk).slice(0, 10);
+  useEffect(() => {
+    if (!ran) return;
+    const next = {};
+    flagged.forEach(s => {
+      next[s._reviewKey] = reviewEdits[s._reviewKey] || { quality: s.quality || s._suggestQ, condition: s.condition || s._suggestC };
+    });
+    setReviewEdits(next);
+  }, [ran, sales.length, subject.qual, subject.cond]);
+  function updateReview(key, field, value) {
+    setApplyMessage('');
+    setReviewEdits(prev => ({ ...prev, [key]: { ...(prev[key] || {}), [field]: value } }));
+  }
+  function applyReviewSamples() {
+    const keys = new Set(flagged.map(s => s._reviewKey));
+    let changed = 0;
+    const updated = sales.map((s, i) => {
+      const key = s._id ?? `${s.address || 'sale'}-${i}`;
+      if (!keys.has(key) || !reviewEdits[key]) return s;
+      const quality = reviewEdits[key].quality || s.quality;
+      const condition = reviewEdits[key].condition || s.condition;
+      if (quality !== s.quality || condition !== s.condition) changed++;
+      return { ...s, quality, condition, qc_reviewed: true };
+    });
+    setSales(updated);
+    setApplyMessage(changed ? `Applied ${changed} Q/C sample update(s). Updated ratings now feed comp ranking, adjustment grid, and exports.` : 'No Q/C changes were needed.');
+  }
   return <div className="dash-page">
-    <section className="panel-card"><p className="eyebrow">Appraiser Tool</p><h1>Q/C Analyzer</h1><p className="muted max">Analyze quality and condition distribution, compare the subject to the market, and flag ratings for review.</p><div className="btn-row"><button className="btn gold" onClick={() => setRan(true)}>Analyze Q/C + Show Review Samples</button><button className="btn ghost" onClick={() => setRan(false)}>Reset</button></div><div className="qc-summary"><div><h2>Subject Quality</h2><b>{subject.qual || '—'}</b><span>{qn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div><div><h2>Subject Condition</h2><b>{subject.cond || '—'}</b><span>{cn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div></div></section>
+    <section className="panel-card"><p className="eyebrow">Appraiser Tool</p><h1>Q/C Analyzer</h1><p className="muted max">Analyze quality and condition distribution, compare the subject to the market, edit the suggested review samples, then apply the verified Q/C ratings back to the sales data.</p><div className="btn-row"><button className="btn gold" onClick={() => { setRan(true); setApplyMessage(''); }}>Analyze Q/C + Show Review Samples</button><button className="btn ghost" onClick={() => { setRan(false); setReviewEdits({}); setApplyMessage(''); }}>Reset</button></div><div className="qc-summary"><div><h2>Subject Quality</h2><b>{subject.qual || '—'}</b><span>{qn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div><div><h2>Subject Condition</h2><b>{subject.cond || '—'}</b><span>{cn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div></div>{applyMessage && <div className="status-banner success">{applyMessage}</div>}</section>
     <section className="two-col"><Distribution title="Quality Distribution" data={q} /><Distribution title="Condition Distribution" data={c} /></section>
-    {ran && <section className="table-card"><div className="card-head"><h2>10 Suggested Q/C Review Samples</h2><span>Flagged across comp pool</span></div><table><thead><tr><th>Sale</th><th>Current Q/C</th><th>Suggested Review</th><th>Flag / Reason</th></tr></thead><tbody>{flagged.map((s, i) => <tr key={i}><td>{s.address || '—'}<span>{s.city || ''}</span></td><td>{s.quality || '—'} / {s.condition || '—'}</td><td>{s._suggestQ} / {s._suggestC}</td><td><em className={s._risk >= 70 ? 'flag-warn' : 'flag-good'}>{s._reason}</em></td></tr>)}</tbody></table></section>}
-    <section className="table-card"><div className="card-head"><h2>Q/C Review Flags</h2><span>{sales.length} sales reviewed</span></div><table><thead><tr><th>Sale</th><th>Q</th><th>C</th><th>Flag</th></tr></thead><tbody>{sales.slice(0, 15).map((s, i) => { const missing = !s.quality || !s.condition; const qdiff = qn && ratingNum(s.quality) ? Math.abs(ratingNum(s.quality) - qn) : 0; const cdiff = cn && ratingNum(s.condition) ? Math.abs(ratingNum(s.condition) - cn) : 0; return <tr key={i}><td>{s.address || '—'}</td><td>{s.quality || '—'}</td><td>{s.condition || '—'}</td><td><em className={missing || qdiff > 1 || cdiff > 1 ? 'flag-warn' : 'flag-good'}>{missing ? 'Missing rating' : qdiff > 1 || cdiff > 1 ? 'Large Q/C spread' : 'Typical'}</em></td></tr>; })}</tbody></table></section>
+    {ran && <section className="table-card"><div className="card-head"><div><h2>10 Suggested Q/C Review Samples</h2><span>Edit the verified rating for each sample, then apply the updates.</span></div><button className="btn gold small" onClick={applyReviewSamples}>Apply Q/C Rating Adjustments</button></div><table><thead><tr><th>Sale</th><th>Current Q/C</th><th>Suggested Review</th><th>Verified Q</th><th>Verified C</th><th>Flag / Reason</th></tr></thead><tbody>{flagged.map(s => { const edit = reviewEdits[s._reviewKey] || { quality: s.quality || s._suggestQ, condition: s.condition || s._suggestC }; return <tr key={s._reviewKey}><td>{s.address || '—'}<span>{s.city || ''}</span></td><td>{s.quality || '—'} / {s.condition || '—'}</td><td>{s._suggestQ} / {s._suggestC}</td><td><select className="cell-input" value={edit.quality || ''} onChange={e => updateReview(s._reviewKey, 'quality', e.target.value)}><option value="">—</option>{ratingOptions.map(x => <option key={x} value={x}>{x}</option>)}</select></td><td><select className="cell-input" value={edit.condition || ''} onChange={e => updateReview(s._reviewKey, 'condition', e.target.value)}><option value="">—</option>{conditionOptions.map(x => <option key={x} value={x}>{x}</option>)}</select></td><td><em className={s._risk >= 70 ? 'flag-warn' : 'flag-good'}>{s._reason}</em></td></tr>; })}</tbody></table></section>}
+    <section className="table-card"><div className="card-head"><h2>Q/C Review Flags</h2><span>{sales.length} sales reviewed</span></div><table><thead><tr><th>Sale</th><th>Q</th><th>C</th><th>Flag</th></tr></thead><tbody>{sales.slice(0, 15).map((s, i) => { const missing = !s.quality || !s.condition; const qdiff = qn && ratingNum(s.quality) ? Math.abs(ratingNum(s.quality) - qn) : 0; const cdiff = cn && ratingNum(s.condition) ? Math.abs(ratingNum(s.condition) - cn) : 0; return <tr key={i}><td>{s.address || '—'}</td><td>{s.quality || '—'}</td><td>{s.condition || '—'}</td><td><em className={missing || qdiff > 1 || cdiff > 1 ? 'flag-warn' : 'flag-good'}>{s.qc_reviewed ? 'Reviewed / updated' : missing ? 'Missing rating' : qdiff > 1 || cdiff > 1 ? 'Large Q/C spread' : 'Typical'}</em></td></tr>; })}</tbody></table></section>
   </div>;
 }
 
 // ── Market Conditions ─────────────────────────────────────────────────────────
+function MarketLineChart({ points, max }) {
+  if (!points.length) return <div className="status-banner">No valid market trend points available.</div>;
+  const w = 720, h = 220, pad = 34;
+  const vals = points.map(p => p.yMod).filter(v => isFinite(v));
+  const minY = Math.min(...vals), maxY = Math.max(max || 1, ...vals);
+  const span = Math.max(1, maxY - minY);
+  const denom = Math.max(1, points.length - 1);
+  const coords = points.map((p, i) => {
+    const x = pad + (i / denom) * (w - pad * 2);
+    const y = h - pad - ((p.yMod - minY) / span) * (h - pad * 2);
+    return { ...p, x, y };
+  });
+  const d = coords.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  return <div className="market-line-wrap">
+    <svg className="market-line-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Median sale price line graph">
+      <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} />
+      <line x1={pad} y1={pad} x2={pad} y2={h - pad} />
+      <path d={d} />
+      {coords.map(p => <g key={p.key}><circle cx={p.x} cy={p.y} r="4"><title>{p.key}: {money(p.yMod)} ({p.n} sales)</title></circle><text x={p.x} y={h - 10} textAnchor="middle">{p.key}</text></g>)}
+    </svg>
+  </div>;
+}
+
 function MarketConditions({ persona, sales, setMtNarData }) {
   const [mode, setMode] = useState('rolling3'); const [minSales, setMinSales] = useState(1); const [ran, setRan] = useState(false);
   const series = useMemo(() => marketSeries(sales, minSales, mode), [sales, minSales, mode]);
@@ -221,7 +327,7 @@ function MarketConditions({ persona, sales, setMtNarData }) {
       <div className="btn-row"><button className="btn gold" onClick={generate}>Generate Market Study</button>{ran && <span className="status-pill">Study generated using {modeLabels[mode]}</span>}</div>
       {ran && <div className="metric-grid four"><div><b>{series.monthly.toFixed(3)}%</b><span>Monthly Rate</span></div><div><b>{(series.monthly * 12).toFixed(2)}%</b><span>Annualized</span></div><div><b>{series.points.length}</b><span>Periods Used</span></div><div><b>{series.monthly > 0.1 ? '↑ Increasing' : series.monthly < -0.1 ? '↓ Declining' : '→ Stable'}</b><span>Direction</span></div></div>}
     </section>
-    {ran ? <section className="chart-card"><h2>Median Sale Price Trend</h2><div className="line-chart">{series.points.map((p, i) => <i key={p.key + i} style={{ height: `${Math.max(8, Math.min(100, (p.yMod / series.max) * 100))}%` }} title={`${p.key}: ${money(p.yMod)}`} />)}</div><div className="table-card embedded"><table><thead><tr><th>Period</th><th>Sales</th><th>Raw Median</th><th>Modified Median</th></tr></thead><tbody>{series.points.map(p => <tr key={p.key}><td>{p.key}</td><td>{p.n}</td><td>{money(p.y)}</td><td>{money(p.yMod)}</td></tr>)}</tbody></table></div></section>
+    {ran ? <section className="chart-card"><h2>Median Sale Price Trend</h2><MarketLineChart points={series.points} max={series.max} /><div className="table-card embedded"><table><thead><tr><th>Period</th><th>Sales</th><th>Raw Median</th><th>Modified Median</th></tr></thead><tbody>{series.points.map(p => <tr key={p.key}><td>{p.key}</td><td>{p.n}</td><td>{money(p.y)}</td><td>{money(p.yMod)}</td></tr>)}</tbody></table></div></section>
       : <section className="panel-card"><h2>Ready to generate</h2><p className="muted">Choose a modifier, then click Generate Market Study.</p></section>}
   </div>;
 }
@@ -426,7 +532,7 @@ function Panel({ title, eyebrow, copy }) { return <div className="dash-page"><se
 
 // ── Line chart CSS ────────────────────────────────────────────────────────────
 // (injected inline to avoid needing extra CSS edits)
-const chartStyle = `.line-chart{height:160px;display:flex;align-items:end;gap:4px;margin:1rem 0}.line-chart i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--cyan),rgba(77,225,255,.05));min-height:8px;cursor:pointer;transition:opacity .2s}.line-chart i:hover{opacity:.75}`;
+const chartStyle = `.line-chart{height:160px;display:flex;align-items:end;gap:4px;margin:1rem 0}.line-chart i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--cyan),rgba(77,225,255,.05));min-height:8px;cursor:pointer;transition:opacity .2s}.line-chart i:hover{opacity:.75}.market-line-wrap{width:100%;overflow-x:auto;margin:1rem 0}.market-line-svg{width:100%;min-width:520px;height:260px}.market-line-svg line{stroke:rgba(255,255,255,.18);stroke-width:1}.market-line-svg path{fill:none;stroke:var(--cyan);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.market-line-svg circle{fill:var(--gold);stroke:var(--navy);stroke-width:2}.market-line-svg text{fill:var(--muted);font-size:10px}`;
 
 // ── App root ──────────────────────────────────────────────────────────────────
 function App() {
