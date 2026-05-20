@@ -195,6 +195,9 @@ function DashboardShell({ persona, session, demoMode = false }) {
     setProjectsLoading(false);
     if (error) { setCloudStatus(error.message); return; }
     setProjects(data || []);
+    if (data?.length && !currentProjectId) {
+  openProject(data[0]);
+}
   }
 
   function newProject() {
