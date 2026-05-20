@@ -389,7 +389,8 @@ function ImportData({ persona, sales, setSales, demoMode = false }) {
   const required = ['sale_price', 'sale_date', 'gla'];
   const mappedOk = required.every(f => mapping[f] !== undefined && mapping[f] !== '');
   async function handle(e) { const f = e.target.files?.[0]; if (!f) return; const text = await f.text(); const parsed = parseCSVMatrix(text); const m = autoMapHeaders(parsed.headers); setHeaders(parsed.headers); setRawRows(parsed.rows); setMapping(m); setPreview(rowsFromMapping(parsed.headers, parsed.rows, m)); setFileName(f.name); setCommitted(false); setImportStatus(`Loaded ${f.name}. Review the column mapping below before applying.`); e.target.value = ''; }
-  async function apply() {
+ async function apply() {
+    if (demoMode) { setImportStatus('CSV import is not available in demo mode. Sign up or log in to import your own data.'); return; }
     if (!mappedOk) { setImportStatus('Map Sale Price, Sale Date, and GLA before applying. Optional fields improve analysis.'); return; }
     const records = rowsFromMapping(headers, rawRows, mapping);
     setGeocoding(true);
@@ -729,8 +730,14 @@ function Panel({ title, eyebrow, copy }) { return <div className="dash-page"><se
 
 // ── Line chart CSS ────────────────────────────────────────────────────────────
 // (injected inline to avoid needing extra CSS edits)
-const chartStyle = `.line-chart{height:160px;display:flex;align-items:end;gap:4px;margin:1rem 0}.line-chart i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--cyan),rgba(77,225,255,.05));min-height:8px;cursor:pointer;transition:opacity .2s}.line-chart i:hover{opacity:.75}.market-line-wrap{width:100%;overflow-x:auto;margin:1rem 0}.market-line-svg{width:100%;min-width:520px;height:260px}.market-line-svg line{stroke:rgba(255,255,255,.18);stroke-width:1}.market-line-svg path{fill:none;stroke:var(--cyan);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.market-line-svg circle{fill:var(--gold);stroke:var(--navy);stroke-width:2}.market-line-svg text{fill:var(--muted);font-size:10px}`;
+const chartStyle = `.line-chart{height:160px;display:flex;align-items:end;gap:4px;margin:1rem 0}.line-chart i{flex:1;border-radius:6px 6px 0 0;background:linear-gradient(var(--cyan),rgba(77,225,255,.05));min-height:8px;cursor:pointer;transition:opacity .2s}.line-chart i:hover{opacity:.75}.market-line-wrap{width:100%;overflow-x:auto;margin:1rem 0}.market-line-svg{width:100%;min-width:520px;height:260px}.market-line-svg line{stroke:rgba(255,255,255,.18);stroke-width:1}.market-line-svg path{fill:none;stroke:var(--cyan);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.market-line-svg circle{fill:var(--gold);stroke:var(--navy);stroke-width:2}.market-line-svg text{fill:var(--muted);font-size:10px}
 
+.upload-box.locked{cursor:default;opacity:.8;border-style:dashed;border-color:rgba(214,176,74,.3);background:rgba(214,176,74,.04);pointer-events:none}
+.upload-box.locked strong{color:var(--muted)}
+.upload-box.locked a{color:var(--gold);text-decoration:underline;pointer-events:all}
+.empty-state{padding:2rem;text-align:center}
+.empty-state p{margin:.5rem 0}`;
+  
 // ── App root ──────────────────────────────────────────────────────────────────
 function App() {
   useEffect(() => { const s = document.createElement('style'); s.textContent = chartStyle; document.head.appendChild(s); return () => s.remove(); }, []);
