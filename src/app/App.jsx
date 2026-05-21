@@ -752,21 +752,33 @@ function App() {
   }, []);
 
   if (!authReady) return <main className="auth-page"><section className="auth-card"><h1>Loading ValoraIQ…</h1></section></main>;
-  if (path === '/login' || path === '/signup') {
+
+if (path.startsWith('/demo')) {
+  navigate('/signup');
+  return null;
+}
+
+if (path === '/login' || path === '/signup') {
   if (session) {
     navigate('/appraiser');
     return null;
   }
   return <Auth type={path === '/signup' ? 'signup' : 'login'} />;
 }
-  if (path.startsWith('/appraiser')) return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
-  if (path.startsWith('/agent')) return session ? <DashboardShell persona="agent" session={session} /> : <Auth type="login" />;
-  return <Landing />;
-  if (path.startsWith('/demo')) 
-  {navigate('/signup');
-   return null;
-  }
-  return <Landing />;
+
+if (path.startsWith('/appraiser')) return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
+if (path.startsWith('/agent')) return session ? <DashboardShell persona="agent" session={session} /> : <Auth type="login" />;
+
+return <Landing />;
+  function usePath() {
+  const [path, setPath] = useState(location.pathname);
+  useEffect(() => {
+    const fn = () => setPath(location.pathname);
+    addEventListener('popstate', fn);
+    return () => removeEventListener('popstate', fn);
+  }, []);
+  return routes.some(r => path === r || path.startsWith('/appraiser/') || path.startsWith('/agent/')) ? path : '/';
+}
 }
 
 createRoot(document.getElementById('root')).render(<App />);
