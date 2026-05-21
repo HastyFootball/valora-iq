@@ -752,8 +752,13 @@ function App() {
   }, []);
 
   if (!authReady) return <main className="auth-page"><section className="auth-card"><h1>Loading ValoraIQ…</h1></section></main>;
-  if (path === '/login') return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
-  if (path === '/signup') return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="signup" />;
+  if (path === '/login' || path === '/signup') {
+  if (session) {
+    navigate('/appraiser');
+    return null;
+  }
+  return <Auth type={path === '/signup' ? 'signup' : 'login'} />;
+}
   if (path.startsWith('/appraiser')) return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
   if (path.startsWith('/agent')) return session ? <DashboardShell persona="agent" session={session} /> : <Auth type="login" />;
   return <Landing />;
