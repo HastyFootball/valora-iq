@@ -6,7 +6,19 @@ import { supabase } from '../lib/supabaseClient';
 // ── Router ──────────────────────────────────────────────────────────────────
 const routes = ['/', '/login', '/signup', '/appraiser', '/agent'];
 function navigate(path) { window.history.pushState({}, '', path); window.dispatchEvent(new Event('popstate')); if (!path.includes('/appraiser/') && !path.includes('/agent/') && !path.includes('/demo/')) window.scrollTo({ top: 0, behavior: 'smooth' }); }
-function usePath() { const [path, setPath] = useState(location.pathname); useEffect(() => { const fn = () => setPath(location.pathname); addEventListener('popstate', fn); return () => removeEventListener('popstate', fn) }, []); return routes.some(r => path === r || path.startsWith('/appraiser/') || path.startsWith('/agent/') || path.startsWith('/demo/appraiser') || path.startsWith('/demo/agent')) ? path : '/'; }
+function usePath() {
+  const [path, setPath] = useState(location.pathname);
+
+  useEffect(() => {
+    const fn = () => setPath(location.pathname);
+    addEventListener('popstate', fn);
+    return () => removeEventListener('popstate', fn);
+  }, []);
+
+  return routes.some(
+    r => path === r || path.startsWith('/appraiser/') || path.startsWith('/agent/')
+  ) ? path : '/';
+}
 function Link({ to, children, className }) { return <a href={to} className={className} onClick={e => { e.preventDefault(); navigate(to) }}>{children}</a> }
 function Logo({ compact = false }) { return <div className="logo-lockup"><div className="logo-mark"><span>V</span></div>{!compact && <div><strong>Valora<span>IQ</span></strong><small>Real Estate Intelligence</small></div>}</div> }
 
@@ -740,45 +752,63 @@ const chartStyle = `.line-chart{height:160px;display:flex;align-items:end;gap:4p
   
 // ── App root ──────────────────────────────────────────────────────────────────
 function App() {
-  useEffect(() => { const s = document.createElement('style'); s.textContent = chartStyle; document.head.appendChild(s); return () => s.remove(); }, []);
+  useEffect(() => {
+    const s = document.createElement('style');
+    s.textContent = chartStyle;
+    document.head.appendChild(s);
+    return () => s.remove();
+  }, []);
+
   const path = usePath();
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setAuthReady(true);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (!authReady) return <main className="auth-page"><section className="auth-card"><h1>Loading ValoraIQ…</h1></section></main>;
+  if (!authReady) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card">
+          <h1>Loading ValoraIQ…</h1>
+        </section>
+      </main>
+    );
+  }
 
-if (path.startsWith('/demo')) {
-  navigate('/signup');
-  return null;
-}
-
-if (path === '/login' || path === '/signup') {
-  if (session) {
-    navigate('/appraiser');
+  if (path.startsWith('/demo')) {
+    navigate('/signup');
     return null;
   }
-  return <Auth type={path === '/signup' ? 'signup' : 'login'} />;
-}
 
-if (path.startsWith('/appraiser')) return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
-if (path.startsWith('/agent')) return session ? <DashboardShell persona="agent" session={session} /> : <Auth type="login" />;
+  if (path === '/login' || path === '/signup') {
+    if (session) {
+      navigate('/appraiser');
+      return null;
+    }
 
-return <Landing />;
-  function usePath() {
-  const [path, setPath] = useState(location.pathname);
-  useEffect(() => {
-    const fn = () => setPath(location.pathname);
-    addEventListener('popstate', fn);
-    return () => removeEventListener('popstate', fn);
-  }, []);
-  return routes.some(r => path === r || path.startsWith('/appraiser/') || path.startsWith('/agent/')) ? path : '/';
-}
+    return <Auth type={path === '/signup' ? 'signup' : 'login'} />;
+  }
+
+  if (path.startsWith('/appraiser')) {
+    return session ? <DashboardShell persona="appraiser" session={session} /> : <Auth type="login" />;
+  }
+
+  if (path.startsWith('/agent')) {
+    return session ? <DashboardShell persona="agent" session={session} /> : <Auth type="login" />;
+  }
+
+  return <Landing />;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
