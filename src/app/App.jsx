@@ -183,9 +183,6 @@ function DashboardShell({ persona, session }) {
     setProjectsLoading(false);
     if (error) { setCloudStatus(error.message); return; }
     setProjects(data || []);
-    if (data?.length && !currentProjectId) {
-  openProject(data[0]);
-}
   }
 
   function newProject() {
@@ -251,7 +248,7 @@ function DashboardShell({ persona, session }) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    navigate('/login');
+    navigate('/');
   }
 
   const activeProjectLabel = currentProjectName || 'No project open';
@@ -279,7 +276,7 @@ function DashboardShell({ persona, session }) {
             <button className="btn gold" onClick={saveProject}>Save Project</button>
             <button className="btn ghost" onClick={() => setRoute('Projects')}>Open</button>
             <button className="btn ghost" onClick={signOut}>Sign out</button>
-            <button className="avatar">{(user?.email || 'VQ').slice(0, 2).toUpperCase()}</button>
+            <button className="avatar" onClick={signOut} title="Sign out and return home">{(user?.email || 'VQ').slice(0, 2).toUpperCase()}</button>
           </div>
         </header>
         {cloudStatus && <div className={`status-banner ${cloudStatus.toLowerCase().includes('saved') || cloudStatus.toLowerCase().includes('opened') || cloudStatus.toLowerCase().includes('created') ? 'success' : ''}`} style={{ margin: '12px 24px 0' }}>{cloudStatus}</div>}
@@ -290,7 +287,7 @@ function DashboardShell({ persona, session }) {
 }
 
 function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSales, selectedComps, setSelectedComps, adjRows, setAdjRows, glaNarData, setGlaNarData, mtNarData, setMtNarData, projects, projectsLoading, currentProjectId, currentProjectName, newProject, openProject, deleteProject, saveProject, fetchProjects }) {
-  if (tab === 'Dashboard') return persona === 'appraiser' ? <AppraiserHome sales={sales} projects={projects} setRoute={setRoute} newProject={newProject} /> : <AgentHome sales={sales} projects={projects} setRoute={setRoute} newProject={newProject} />;
+  if (tab === 'Dashboard') return persona === 'appraiser' ? <AppraiserHome sales={sales} projects={projects} selectedComps={selectedComps} adjRows={adjRows} currentProjectName={currentProjectName} setRoute={setRoute} newProject={newProject} openProject={openProject} deleteProject={deleteProject} /> : <AgentHome sales={sales} projects={projects} selectedComps={selectedComps} currentProjectName={currentProjectName} setRoute={setRoute} newProject={newProject} openProject={openProject} deleteProject={deleteProject} />;
   if (tab === 'Projects') return <Projects persona={persona} projects={projects} projectsLoading={projectsLoading} currentProjectId={currentProjectId} newProject={newProject} openProject={openProject} deleteProject={deleteProject} fetchProjects={fetchProjects} />;
   if (tab === 'Subject Property' || tab === 'Property Overview') return <SubjectForm persona={persona} subject={subject} setSubject={setSubject} />;
   if (tab.includes('Import')) return <ImportData persona={persona} sales={sales} setSales={setSales} />;
@@ -314,25 +311,27 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
 
 // ── KPI + home ────────────────────────────────────────────────────────────────
 function KPI({ label, value, helper }) { return <div className="kpi"><div className="kpi-icon">✦</div><div><span>{label}</span><strong>{value}</strong><small>{helper}</small></div></div> }
-function AppraiserHome({ sales, projects = [], setRoute, newProject }) {
+function AppraiserHome({ sales, projects = [], selectedComps = [], adjRows = [], currentProjectName = '', setRoute, newProject, openProject, deleteProject }) {
   const projectCount = projects.length;
+  const currentLabel = currentProjectName || (sales.length ? 'Unsaved Project' : 'Blank');
   return <div className="dash-page">
-    <section className="welcome"><p className="eyebrow">Good morning</p><h1>Appraiser intelligence workspace</h1><p>Create a project, import MLS data, run the tools, and save your work to Supabase.</p></section>
-    <div className="kpi-row"><KPI label="Projects" value={projectCount} helper="saved to your account" /><KPI label="Imported Sales" value={sales.length} helper="current project" /><KPI label="Current Project" value={sales.length ? 'Active' : 'Blank'} helper={sales.length ? 'data loaded' : 'start or open one'} /><KPI label="Storage" value="Cloud" helper="Supabase" /></div>
-    <div className="two-col"><ProjectTable projects={projects} setRoute={setRoute} /><QuickActions persona="appraiser" setRoute={setRoute} newProject={newProject} /></div>
+    <section className="welcome"><p className="eyebrow">Good morning</p><h1>Appraiser intelligence workspace</h1><p>Build support for Q/C analysis, market conditions, GLA study, comparable selection, site value, adjustments, concessions, reconciliation, and workfile exports.</p></section>
+    <div className="kpi-row"><KPI label="Active Projects" value={projectCount} helper="saved to your account" /><KPI label="Imported Sales" value={sales.length} helper="current project" /><KPI label="Selected Comps" value={selectedComps.length} helper="ready for adjustment grid" /><KPI label="Current Project" value={currentLabel} helper={currentProjectName ? 'open project' : 'start or open one'} /></div>
+    <div className="two-col"><ProjectTable projects={projects} setRoute={setRoute} openProject={openProject} deleteProject={deleteProject} /><QuickActions persona="appraiser" setRoute={setRoute} newProject={newProject} /></div>
     <section className="panel-card"><h2>Professional Use Only</h2><p className="muted">ValoraIQ provides market analysis and valuation support. Appraisers remain responsible for all appraisal conclusions.</p></section>
   </div>;
 }
-function AgentHome({ sales, projects = [], setRoute, newProject }) {
+function AgentHome({ sales, projects = [], selectedComps = [], currentProjectName = '', setRoute, newProject, openProject, deleteProject }) {
+  const currentLabel = currentProjectName || (sales.length ? 'Unsaved Project' : 'Blank');
   return <div className="dash-page">
     <section className="welcome"><p className="eyebrow">Good morning</p><h1>Agent/Broker pricing workspace</h1><p>Create a CMA/listing project, import market data, and save it to your account.</p></section>
-    <div className="kpi-row"><KPI label="Projects" value={projects.length} helper="saved to your account" /><KPI label="Imported Records" value={sales.length} helper="current project" /><KPI label="Current Project" value={sales.length ? 'Active' : 'Blank'} helper={sales.length ? 'data loaded' : 'start or open one'} /><KPI label="Storage" value="Cloud" helper="Supabase" /></div>
-    <div className="two-col"><PricingStrategy compact /><QuickActions persona="agent" setRoute={setRoute} newProject={newProject} /></div>
+    <div className="kpi-row"><KPI label="Active Projects" value={projects.length} helper="saved to your account" /><KPI label="Imported Records" value={sales.length} helper="current project" /><KPI label="Selected Comps" value={selectedComps.length} helper="current project" /><KPI label="Current Project" value={currentLabel} helper={currentProjectName ? 'open project' : 'start or open one'} /></div>
+    <div className="two-col"><ProjectTable projects={projects} setRoute={setRoute} openProject={openProject} deleteProject={deleteProject} /><QuickActions persona="agent" setRoute={setRoute} newProject={newProject} /></div>
   </div>;
 }
-function ProjectTable({ projects = [], setRoute }) {
-  const rows = projects.slice(0, 3).map(p => [p.name, p.persona === 'agent' ? 'CMA' : 'Appraisal', 'Saved', p.updated_at ? new Date(p.updated_at).toLocaleDateString() : '—']);
-  return <div className="table-card"><div className="card-head"><h2>Recent Projects</h2><button onClick={() => setRoute('Projects')}>View all →</button></div>{rows.length ? <table><thead><tr><th>Project</th><th>Type</th><th>Status</th><th>Updated</th></tr></thead><tbody>{rows.map(r => <tr key={r[0]}><td><b>{r[0]}</b><span>Saved project</span></td><td>{r[1]}</td><td><em>{r[2]}</em></td><td>{r[3]}</td></tr>)}</tbody></table> : <div className="status-banner">No saved projects yet. Click New Project to start one.</div>}</div>
+function ProjectTable({ projects = [], setRoute, openProject, deleteProject }) {
+  const rows = projects.slice(0, 5);
+  return <div className="table-card"><div className="card-head"><h2>Recent Projects</h2><button onClick={() => setRoute('Projects')}>View all →</button></div>{rows.length ? <table><thead><tr><th>Project</th><th>Type</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>{rows.map(p => <tr key={p.id}><td><b>{p.name}</b><span>{p.data?.subject?.address || 'Saved project'}</span></td><td>{p.persona === 'agent' ? 'CMA' : 'Appraisal'}</td><td><em>Saved</em></td><td>{p.updated_at ? new Date(p.updated_at).toLocaleDateString() : '—'}</td><td><div className="btn-row"><button className="btn ghost small" onClick={() => openProject(p)}>Open</button><button className="btn ghost small" onClick={() => deleteProject(p)}>Delete</button></div></td></tr>)}</tbody></table> : <div className="status-banner">No saved projects yet. Click New Project to start one.</div>}</div>
 }
 function QuickActions({ persona, setRoute, newProject }) {
   const actions = persona === 'appraiser'
@@ -345,10 +344,10 @@ function QuickActions({ persona, setRoute, newProject }) {
 function Projects({ persona, projects = [], projectsLoading, currentProjectId, newProject, openProject, deleteProject, fetchProjects }) {
   const list = projects;
   return <div className="dash-page">
-    <section className="panel-card row-between"><div><p className="eyebrow">Projects</p><h1>{persona === 'appraiser' ? 'Appraisal Projects' : 'CMA & Listing Projects'}</h1><p className="muted max">Create, open, and delete your saved Supabase projects. Opening a project loads its subject, sales, Q/C edits, selected comps, adjustments, and narrative data.</p></div><div className="btn-row"><button className="btn gold" onClick={newProject}>+ New Project</button><button className="btn ghost" onClick={fetchProjects}>Refresh</button></div></section>
+    <section className="panel-card row-between"><div><p className="eyebrow">Projects</p><h1>{persona === 'appraiser' ? 'Appraisal Projects' : 'CMA & Listing Projects'}</h1><p className="muted max">Create, open, and delete your saved projects. Opening a project loads its subject, imported sales, Q/C edits, selected comps, adjustments, and narrative data.</p></div><div className="btn-row"><button className="btn gold" onClick={newProject}>+ New Project</button><button className="btn ghost" onClick={fetchProjects}>Refresh</button></div></section>
     {projectsLoading && <section className="panel-card"><p className="muted">Loading projects…</p></section>}
-    {!projectsLoading && !list.length && <section className="panel-card"><h2>No projects yet</h2><p className="muted">Click <strong>+ New Project</strong>, enter a project name, then add your subject and import MLS data.</p></section>}
-    <div className="project-grid">{list.map((proj, i) => <article className={`project-card ${currentProjectId === proj.id ? 'selected' : ''}`} key={proj.id}><span>{persona === 'appraiser' ? 'Appraisal' : i % 2 ? 'Listing CMA' : 'Seller Strategy'}</span><h3>{proj.name}</h3><p>{`Updated ${proj.updated_at ? new Date(proj.updated_at).toLocaleString() : '—'}`}</p><div><em>{currentProjectId === proj.id ? 'Open' : 'Saved'}</em><button className="btn ghost small" onClick={() => openProject(proj)}>Open</button><button className="btn ghost small" onClick={() => deleteProject(proj)}>Delete</button></div></article>)}</div>
+    {!projectsLoading && !list.length && <section className="panel-card"><h2>No projects yet</h2><p className="muted">Click <strong>+ New Project</strong>, enter a project name, then add your subject and import MLS data. When you click Save Project, it will appear here.</p></section>}
+    <div className="project-grid">{list.map((proj) => <article className={`project-card ${currentProjectId === proj.id ? 'selected' : ''}`} key={proj.id}><span>{persona === 'appraiser' ? 'Appraisal' : 'CMA / Listing'}</span><h3>{proj.name}</h3><p>{proj.updated_at ? `Updated ${new Date(proj.updated_at).toLocaleString()}` : 'Saved project'}</p><div><em>{currentProjectId === proj.id ? 'Open' : 'Saved'}</em><button className="btn ghost small" onClick={() => openProject(proj)}>Open</button><button className="btn ghost small" onClick={() => deleteProject(proj)}>Delete</button></div></article>)}</div>
   </div>;
 }
 
