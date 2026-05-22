@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #031326;
+  --bg2: #0b2540;
+  --card: #13294b;
+  --text: #f5f7fa;
+  --muted: #9fb3c8;
+  --accent: #4fd1ff;
+  --gold: #f2c94c;
+  --border: rgba(255,255,255,0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(circle at top left, #12385f 0%, #031326 45%),
+    linear-gradient(135deg, #031326 0%, #071d36 100%);
+  color: var(--text);
+}
+
+body {
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+section {
+  position: relative;
+}
+
+.card {
+  background: rgba(19, 41, 75, 0.8);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+}
+
+.hero-title {
+  font-size: clamp(4rem, 9vw, 8rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.hero-subtitle {
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1.7;
+  max-width: 700px;
+}
+
+.glow {
+  box-shadow:
+    0 0 40px rgba(79, 209, 255, 0.15),
+    0 0 80px rgba(79, 209, 255, 0.08);
+}
