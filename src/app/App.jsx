@@ -67,7 +67,7 @@ function rowsFromMapping(headers, rows, map) { return rows.map((cells, i) => { c
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
 const appraiserTabs = ['Dashboard', 'Projects', 'Subject Property', 'MLS Import', 'Q/C Analyzer', 'Market Conditions', 'GLA Study', 'Comp Ranking', 'Site / Land Value', 'Adjustment Grid', 'Concessions', 'Reconciliation', 'Narrative', 'Export Workfile', 'Photos / Exhibits'];
-const agentTabs = ['Dashboard', 'Projects', 'Property Overview', 'MLS Import', 'Q/C Analyzer', 'Market Snapshot', 'Pricing Strategy', 'Comp Ranking', 'Seller Net Sheet', 'Listing Presentation', 'Photos', 'CMA Export'];
+const agentTabs = ['Dashboard', 'Projects', 'Property Overview', 'MLS Import', 'Q/C Analyzer', 'Market Snapshot', 'GLA Study', 'Pricing Strategy', 'Comp Ranking', 'Adjustment Grid', 'Concessions', 'Seller Net Sheet', 'Listing Presentation', 'Photos', 'CMA Export'];
 function slug(s) { return s.toLowerCase().replace(/\//g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/, ''); }
 function iconFor(t) { if (t.includes('Import')) return '⬆'; if (t.includes('Market') || t.includes('Snapshot')) return '↗'; if (t.includes('Export') || t.includes('Workfile')) return '⇩'; if (t.includes('Project')) return '▣'; if (t.includes('AI')) return '✦'; if (t.includes('Photo')) return '◉'; if (t.includes('Net')) return '$'; if (t.includes('Comp')) return '★'; if (t.includes('Q/C')) return '◆'; if (t.includes('Site')) return '◌'; if (t.includes('GLA')) return '⌖'; if (t.includes('Concession')) return '©'; if (t.includes('Reconcil')) return '⊞'; if (t.includes('Narrative')) return '✎'; if (t.includes('Pricing')) return '$'; return '⌂'; }
 
@@ -549,7 +549,7 @@ function ProjectTable({ projects = [], setRoute, openProject, deleteProject }) {
 function QuickActions({ persona, setRoute, newProject }) {
   const actions = persona === 'appraiser'
     ? [['New Appraisal Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Run Q/C Analyzer', 'Q/C Analyzer'], ['Run Market Conditions', 'Market Conditions'], ['Run GLA Study', 'GLA Study'], ['Rank Comparables', 'Comp Ranking'], ['Export Workfile PDF', 'Export Workfile']]
-    : [['New CMA Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Run Quality/Condition Analyzer', 'Q/C Analyzer'], ['Rank Comparables', 'Comp Ranking'], ['Build Seller Presentation', 'Listing Presentation'], ['Create Seller Net Sheet', 'Seller Net Sheet']];
+    : [['New CMA Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Run Quality/Condition Analyzer', 'Q/C Analyzer'], ['Run Market Snapshot', 'Market Snapshot'], ['Run GLA Study', 'GLA Study'], ['Rank Comparables', 'Comp Ranking'], ['Build Adjustment Grid', 'Adjustment Grid'], ['Build Seller Presentation', 'Listing Presentation'], ['Create Seller Net Sheet', 'Seller Net Sheet']];
   return (
     <div className="quick-card">
       <h2>Quick Actions</h2>
@@ -994,15 +994,15 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
                     <td>{qualityLabel(s.quality)} / {conditionLabel(s.condition)}</td>
                     <td>{qualityLabel(s._suggestQ)} / {conditionLabel(s._suggestC)}</td>
                     <td>
-                      <select className="cell-input" value={edit.quality || ''} onChange={e => updateReview(s._reviewKey, 'quality', e.target.value)}>
-                        <option value="" style={{ color: '#111' }}>—</option>
-                        {ratingOptions.map(([code, label]) => <option key={code} value={code} style={{ color: '#111' }}>{code} {label}</option>)}
+                      <select className="cell-input" style={{ color: '#f8fafc', background: '#0b2342' }} value={edit.quality || ''} onChange={e => updateReview(s._reviewKey, 'quality', e.target.value)}>
+                        <option value="" style={{ color: '#f8fafc', background: '#0b2342' }}>—</option>
+                        {ratingOptions.map(([code, label]) => <option key={code} value={code} style={{ color: '#f8fafc', background: '#0b2342' }}>{code} {label}</option>)}
                       </select>
                     </td>
                     <td>
-                      <select className="cell-input" value={edit.condition || ''} onChange={e => updateReview(s._reviewKey, 'condition', e.target.value)}>
-                        <option value="" style={{ color: '#111' }}>—</option>
-                        {conditionOptions.map(([code, label]) => <option key={code} value={code} style={{ color: '#111' }}>{code} {label}</option>)}
+                      <select className="cell-input" style={{ color: '#f8fafc', background: '#0b2342' }} value={edit.condition || ''} onChange={e => updateReview(s._reviewKey, 'condition', e.target.value)}>
+                        <option value="" style={{ color: '#f8fafc', background: '#0b2342' }}>—</option>
+                        {conditionOptions.map(([code, label]) => <option key={code} value={code} style={{ color: '#f8fafc', background: '#0b2342' }}>{code} {label}</option>)}
                       </select>
                     </td>
                     <td><em className={s._risk >= 70 ? 'flag-warn' : 'flag-good'}>{s._reason}</em></td>
@@ -1038,7 +1038,7 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
 function MarketLineChart({ points, max, showRaw = true, showModified = true }) {
   if (!points.length) return <div className="status-banner">No valid market trend points available.</div>;
 
-  const w = 820, h = 280, pad = 42;
+  const w = 820, h = 320, pad = 54;
   const allVals = points
     .flatMap(p => [showRaw ? p.y : null, showModified ? p.yMod : null])
     .filter(v => isFinite(v));
@@ -1047,11 +1047,13 @@ function MarketLineChart({ points, max, showRaw = true, showModified = true }) {
   const maxY = Math.max(max || 1, ...allVals);
   const span = Math.max(1, maxY - minY);
   const denom = Math.max(1, points.length - 1);
+  const yFor = value => h - pad - ((value - minY) / span) * (h - pad * 2);
+  const yTicks = [maxY, minY + span / 2, minY];
 
   const coords = points.map((p, i) => {
     const x = pad + (i / denom) * (w - pad * 2);
-    const rawY = h - pad - ((p.y - minY) / span) * (h - pad * 2);
-    const modY = h - pad - ((p.yMod - minY) / span) * (h - pad * 2);
+    const rawY = yFor(p.y);
+    const modY = yFor(p.yMod);
     return { ...p, x, rawY, modY };
   });
 
@@ -1063,30 +1065,46 @@ function MarketLineChart({ points, max, showRaw = true, showModified = true }) {
       <div className="btn-row" style={{ marginBottom: 10 }}>
         {showRaw && <span className="status-pill">Gold = Raw Median</span>}
         {showModified && <span className="status-pill">Cyan = Modified / Trend Median</span>}
+        <span className="status-pill">Price labels show the sale-price range</span>
       </div>
 
-      <svg className="market-line-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Market conditions trend graph">
+      <svg className="market-line-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Market conditions trend graph with sale price labels">
         <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} />
         <line x1={pad} y1={pad} x2={pad} y2={h - pad} />
+
+        {yTicks.map((tick, i) => {
+          const y = yFor(tick);
+          return (
+            <g key={i}>
+              <line x1={pad} y1={y} x2={w - pad} y2={y} style={{ opacity: 0.16 }} />
+              <text x={pad - 8} y={y + 4} textAnchor="end" style={{ fill: '#b9d4ff', fontSize: 11 }}>{money(Math.round(tick))}</text>
+            </g>
+          );
+        })}
 
         {showRaw && <path d={rawPath} style={{ stroke: 'var(--gold)', opacity: 0.75, strokeDasharray: '6 5' }} />}
         {showModified && <path d={modPath} />}
 
-        {coords.map(p => (
-          <g key={p.key}>
-            {showRaw && (
-              <circle cx={p.x} cy={p.rawY} r="4" style={{ fill: 'var(--gold)' }}>
-                <title>{p.key} Raw: {money(p.y)} ({p.n} sales)</title>
-              </circle>
-            )}
-            {showModified && (
-              <circle cx={p.x} cy={p.modY} r="4">
-                <title>{p.key} Modified: {money(p.yMod)} ({p.n} sales)</title>
-              </circle>
-            )}
-            <text x={p.x} y={h - 10} textAnchor="middle">{p.key}</text>
-          </g>
-        ))}
+        {coords.map((p, i) => {
+          const labelY = Math.max(14, (showModified ? p.modY : p.rawY) - 10 - (i % 2 ? 12 : 0));
+          const labelValue = showModified ? p.yMod : p.y;
+          return (
+            <g key={p.key}>
+              {showRaw && (
+                <circle cx={p.x} cy={p.rawY} r="4" style={{ fill: 'var(--gold)' }}>
+                  <title>{p.key} Raw: {money(p.y)} ({p.n} sales)</title>
+                </circle>
+              )}
+              {showModified && (
+                <circle cx={p.x} cy={p.modY} r="4">
+                  <title>{p.key} Modified: {money(p.yMod)} ({p.n} sales)</title>
+                </circle>
+              )}
+              <text x={p.x} y={labelY} textAnchor="middle" style={{ fill: '#f8fafc', fontSize: 11, fontWeight: 700 }}>{money(Math.round(labelValue))}</text>
+              <text x={p.x} y={h - 12} textAnchor="middle" style={{ fill: '#9fc5ff', fontSize: 10 }}>{p.key}</text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
