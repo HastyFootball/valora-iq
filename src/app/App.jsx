@@ -78,55 +78,188 @@ function Landing() {
   return (
     <>
       <PublicNav />
+
       <main>
+        {/* ── HERO ───────────────────────────────────── */}
         <section className="hero">
           <div className="hero-grid">
             <div>
-              <p className="eyebrow">Professional Real Estate Intelligence Workspace</p>
-              <h1>One platform. Two workflows. Cleaner real estate decisions.</h1>
-              <p className="hero-copy">ValoraIQ helps appraisers build defensible valuation support and helps agents create persuasive CMA and listing presentations from the same market intelligence engine.</p>
+              <p className="eyebrow">
+                Professional Real Estate Analysis Workspace
+              </p>
+
+              <h1>
+                Import MLS data. Analyze properties. Build cleaner workflows.
+              </h1>
+
+              <p className="hero-copy">
+                ValoraIQ helps appraisers and agents turn raw MLS exports into
+                organized market analysis, comparable rankings, adjustment
+                support, and client-ready reports.
+              </p>
+
               <div className="hero-actions">
-                <Link className="btn gold" to="/signup">Start building →</Link>
-                <Link className="btn glass" to="/login">Log in</Link>
+                <Link className="btn gold" to="/signup">
+                  Start building →
+                </Link>
+
+                <Link className="btn glass" to="/login">
+                  Log in
+                </Link>
               </div>
             </div>
+
             <div className="hero-preview">
-              <div className="preview-header"><span /><span /><span /></div>
-              <div className="preview-title">Market Snapshot</div>
-              <div className="preview-card"><b>Import your MLS data to see live market metrics</b><span>Upload a CSV to populate median sale price, DOM, list-to-sale ratio, and trend charts for your market area.</span></div>
+              <div className="preview-header">
+                <span />
+                <span />
+                <span />
+              </div>
+
+              <div className="preview-title">
+                MLS Workflow Import
+              </div>
+
+              <div className="preview-card">
+                <b>
+                  Upload MLS exports and organize your analysis instantly
+                </b>
+
+                <span>
+                  Automatically map fields, analyze comparables, track market
+                  trends, and build appraisal or CMA workflows from one
+                  workspace.
+                </span>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* ── WORKFLOWS ─────────────────────────────── */}
         <section className="section" id="workflows">
-          <p className="eyebrow center">Persona-specific dashboards</p>
-          <h2>Appraisers and agents should not see the same product.</h2>
+          <p className="eyebrow center">
+            Purpose-built workflows
+          </p>
+
+          <h2>
+            Purpose-built workflows for appraisers and agents.
+          </h2>
+
           <div className="workflow-cards">
-            <article><h3>Appraiser Workspace</h3><p>Subject, MLS import, Q/C analyzer, market conditions, GLA study, comp ranking, site value, adjustments, concessions, reconciliation, narrative, and workfile export.</p><Link to="/signup">Start appraiser workspace</Link></article>
-            <article><h3>Agent/Broker Workspace</h3><p>Property overview, market snapshot, pricing strategy, active/pending/sold intelligence, seller net sheet, listing presentation, and CMA export.</p><Link to="/signup">Start agent workspace</Link></article>
+            <article>
+              <h3>Appraiser Workspace</h3>
+
+              <p>
+                Import MLS data, rank comparables, analyze market trends,
+                build adjustment support, generate narratives, and organize
+                complete appraisal workflows.
+              </p>
+
+              <Link to="/signup">
+                Start appraiser workspace
+              </Link>
+            </article>
+
+            <article>
+              <h3>Agent/Broker Workspace</h3>
+
+              <p>
+                Create CMAs, analyze active and sold comparables, build
+                pricing strategies, generate seller net sheets, and organize
+                listing presentations.
+              </p>
+
+              <Link to="/signup">
+                Start agent workspace
+              </Link>
+            </article>
           </div>
         </section>
-        <section className="section" id="features">
-          <p className="eyebrow center">Core platform</p>
-          <h2>From raw MLS data to clear, client-ready outputs.</h2>
+
+        {/* ── BUILT FOR ─────────────────────────────── */}
+        <section className="section">
+          <p className="eyebrow center">
+            Built For
+          </p>
+
+          <h2>
+            Designed for real estate professionals.
+          </h2>
+
           <div className="feature-grid">
-            {['MLS Import', 'Comp Ranking + Geocoding', 'Q/C Analyzer', 'Market Conditions Modifier', 'GLA Regression + Paired Sales', 'Workfile Save / Export'].map(t => (
-              <div className="feature-card" key={t}><div className="glyph">✦</div><h3>{t}</h3><p>Premium workflow support designed for real estate professionals.</p></div>
+            {[
+              'Residential Appraisers',
+              'Review Appraisers',
+              'Real Estate Agents',
+              'Broker Price Opinions',
+              'CMA Preparation',
+              'Market Analysis'
+            ].map(t => (
+              <div className="feature-card" key={t}>
+                <div className="glyph">✦</div>
+                <h3>{t}</h3>
+              </div>
             ))}
           </div>
         </section>
+
+        {/* ── FEATURES ──────────────────────────────── */}
+        <section className="section" id="features">
+          <p className="eyebrow center">
+            Core platform
+          </p>
+
+          <h2>
+            From raw MLS data to clear, client-ready outputs.
+          </h2>
+
+          <div className="feature-grid">
+            {[
+              'MLS Import',
+              'Comparable Ranking',
+              'Quality & Condition Analysis',
+              'Market Trend Analysis',
+              'GLA Analysis',
+              'Project Save & Export'
+            ].map(t => (
+              <div className="feature-card" key={t}>
+                <div className="glyph">✦</div>
+                <h3>{t}</h3>
+
+                <p>
+                  Professional workflow support designed for real estate
+                  analysis and reporting.
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── PRICING ───────────────────────────────── */}
         <section className="section pricing" id="pricing">
-          <p className="eyebrow center">Pricing</p>
-          <h2>Start free. Save your work to the cloud.</h2>
-          <p className="muted max center-block">Create an account to save projects, access narrative tools, and export workfiles. Sign up to get started at no cost.</p>
+          <p className="eyebrow center">
+            Pricing
+          </p>
+
+          <h2>
+            Start free. Save projects to the cloud.
+          </h2>
+
+          <p className="muted max center-block">
+            Create an account to save projects, organize workflows,
+            generate reports, and access valuation tools from anywhere.
+          </p>
+
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link className="btn gold" to="/signup">Create free account →</Link>
+            <Link className="btn gold" to="/signup">
+              Create free account →
+            </Link>
           </div>
         </section>
       </main>
     </>
   );
 }
-
 function Auth({ type }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
