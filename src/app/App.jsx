@@ -67,7 +67,7 @@ function rowsFromMapping(headers, rows, map) { return rows.map((cells, i) => { c
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
 const appraiserTabs = ['Dashboard', 'Projects', 'Subject Property', 'MLS Import', 'Q/C Analyzer', 'Market Conditions', 'GLA Study', 'Comp Ranking', 'Site / Land Value', 'Adjustment Grid', 'Concessions', 'Reconciliation', 'Narrative', 'Export Workfile', 'Photos / Exhibits'];
-const agentTabs = ['Dashboard', 'Projects', 'Property Overview', 'MLS Import', 'Market Snapshot', 'Pricing Strategy', 'Comp Ranking', 'Seller Net Sheet', 'Listing Presentation', 'Photos', 'CMA Export'];
+const agentTabs = ['Dashboard', 'Projects', 'Property Overview', 'MLS Import', 'Q/C Analyzer', 'Market Snapshot', 'Pricing Strategy', 'Comp Ranking', 'Seller Net Sheet', 'Listing Presentation', 'Photos', 'CMA Export'];
 function slug(s) { return s.toLowerCase().replace(/\//g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/, ''); }
 function iconFor(t) { if (t.includes('Import')) return '⬆'; if (t.includes('Market') || t.includes('Snapshot')) return '↗'; if (t.includes('Export') || t.includes('Workfile')) return '⇩'; if (t.includes('Project')) return '▣'; if (t.includes('AI')) return '✦'; if (t.includes('Photo')) return '◉'; if (t.includes('Net')) return '$'; if (t.includes('Comp')) return '★'; if (t.includes('Q/C')) return '◆'; if (t.includes('Site')) return '◌'; if (t.includes('GLA')) return '⌖'; if (t.includes('Concession')) return '©'; if (t.includes('Reconcil')) return '⊞'; if (t.includes('Narrative')) return '✎'; if (t.includes('Pricing')) return '$'; return '⌂'; }
 
@@ -459,7 +459,7 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
   if (tab === 'Projects') return <Projects persona={persona} projects={projects} projectsLoading={projectsLoading} currentProjectId={currentProjectId} newProject={newProject} openProject={openProject} deleteProject={deleteProject} fetchProjects={fetchProjects} />;
   if (tab === 'Subject Property' || tab === 'Property Overview') return <SubjectForm persona={persona} subject={subject} setSubject={setSubject} />;
   if (tab.includes('Import')) return <ImportData persona={persona} sales={sales} setSales={setSales} />;
-  if (tab === 'Q/C Analyzer') return <QCAnalyzer sales={sales} setSales={setSales} subject={subject} />;
+  if (tab === 'Q/C Analyzer') return <QCAnalyzer persona={persona} sales={sales} setSales={setSales} subject={subject} />;
   if (tab === 'Market Conditions' || tab === 'Market Snapshot') return <MarketConditions persona={persona} sales={sales} setMtNarData={setMtNarData} marketStudyState={marketStudyState} setMarketStudyState={setMarketStudyState} setAdjustmentDefaults={setAdjustmentDefaults} />;
   if (tab === 'GLA Study') return <GLAStudy sales={sales} subject={subject} setGlaNarData={setGlaNarData} glaStudyState={glaStudyState} setGlaStudyState={setGlaStudyState} setAdjustmentDefaults={setAdjustmentDefaults} adjustmentDefaults={adjustmentDefaults} />;
   if (tab === 'Comp Ranking') return <CompRanking subject={subject} setSubject={setSubject} sales={sales} setSales={setSales} selectedComps={selectedComps} setSelectedComps={setSelectedComps} />;
@@ -549,7 +549,7 @@ function ProjectTable({ projects = [], setRoute, openProject, deleteProject }) {
 function QuickActions({ persona, setRoute, newProject }) {
   const actions = persona === 'appraiser'
     ? [['New Appraisal Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Run Q/C Analyzer', 'Q/C Analyzer'], ['Run Market Conditions', 'Market Conditions'], ['Run GLA Study', 'GLA Study'], ['Rank Comparables', 'Comp Ranking'], ['Export Workfile PDF', 'Export Workfile']]
-    : [['New CMA Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Rank Comparables', 'Comp Ranking'], ['Build Seller Presentation', 'Listing Presentation'], ['Create Seller Net Sheet', 'Seller Net Sheet']];
+    : [['New CMA Project', 'Projects'], ['Import MLS Data', 'MLS Import'], ['Run Quality/Condition Analyzer', 'Q/C Analyzer'], ['Rank Comparables', 'Comp Ranking'], ['Build Seller Presentation', 'Listing Presentation'], ['Create Seller Net Sheet', 'Seller Net Sheet']];
   return (
     <div className="quick-card">
       <h2>Quick Actions</h2>
@@ -776,12 +776,36 @@ function Distribution({ title, data }) {
     </section>
   );
 }
-function QCAnalyzer({ sales, setSales, subject }) {
+function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
   const [ran, setRan] = useState(false);
   const [reviewEdits, setReviewEdits] = useState({});
   const [applyMessage, setApplyMessage] = useState('');
-  const ratingOptions = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'];
-  const conditionOptions = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
+  const ratingOptions = [
+    ['Q1', 'Excellent'],
+    ['Q2', 'Very Good'],
+    ['Q3', 'Good'],
+    ['Q4', 'Average'],
+    ['Q5', 'Below Average'],
+    ['Q6', 'Poor']
+  ];
+  const conditionOptions = [
+    ['C1', 'New / Never Lived In'],
+    ['C2', 'Good'],
+    ['C3', 'Above Average'],
+    ['C4', 'Average'],
+    ['C5', 'Below Average'],
+    ['C6', 'Poor']
+  ];
+  const qualityLabel = v => {
+    const code = String(v || '').toUpperCase().match(/Q[1-6]/)?.[0];
+    const found = ratingOptions.find(([r]) => r === code);
+    return found ? `${found[0]} ${found[1]}` : v || '—';
+  };
+  const conditionLabel = v => {
+    const code = String(v || '').toUpperCase().match(/C[1-6]/)?.[0];
+    const found = conditionOptions.find(([r]) => r === code);
+    return found ? `${found[0]} ${found[1]}` : v || '—';
+  };
 
   const sampleSize = Math.max(5, Math.ceil((sales.length || 0) * 0.1));
 
@@ -915,9 +939,9 @@ function QCAnalyzer({ sales, setSales, subject }) {
   return (
     <div className="dash-page">
       <section className="panel-card">
-        <p className="eyebrow">Appraiser Tool</p>
-        <h1>Q/C Analyzer</h1>
-        <p className="muted max">Review a sample of imported sales, then ValoraIQ estimates Q/C ratings for the remaining sales based on similarity.</p>
+        <p className="eyebrow">{persona === 'appraiser' ? 'Appraiser Tool' : 'Agent/Broker Tool'}</p>
+        <h1>{persona === 'appraiser' ? 'Q/C Analyzer' : 'Quality / Condition Analyzer'}</h1>
+        <p className="muted max">Review a sample of imported sales, then ValoraIQ estimates quality and condition ratings for the remaining sales based on similarity. The plain-English labels make the rating scale easier to use for both appraisers and agents.</p>
 
         <div className="btn-row">
           <button className="btn gold" onClick={() => { setRan(true); setApplyMessage(''); }}>
@@ -929,8 +953,8 @@ function QCAnalyzer({ sales, setSales, subject }) {
         </div>
 
         <div className="qc-summary">
-          <div><h2>Subject Quality</h2><b>{subject.qual || '—'}</b><span>{qn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div>
-          <div><h2>Subject Condition</h2><b>{subject.cond || '—'}</b><span>{cn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div>
+          <div><h2>Subject Quality</h2><b>{qualityLabel(subject.qual)}</b><span>{qn ? 'Rating captured' : persona === 'appraiser' ? 'Set rating in Subject Property' : 'Set rating in Property Overview'}</span></div>
+          <div><h2>Subject Condition</h2><b>{conditionLabel(subject.cond)}</b><span>{cn ? 'Rating captured' : persona === 'appraiser' ? 'Set rating in Subject Property' : 'Set rating in Property Overview'}</span></div>
         </div>
 
         {applyMessage && <div className="status-banner success">{applyMessage}</div>}
@@ -967,18 +991,18 @@ function QCAnalyzer({ sales, setSales, subject }) {
                 return (
                   <tr key={s._reviewKey}>
                     <td>{s.address || '—'}<span>{s.city || ''}</span></td>
-                    <td>{s.quality || '—'} / {s.condition || '—'}</td>
-                    <td>{s._suggestQ} / {s._suggestC}</td>
+                    <td>{qualityLabel(s.quality)} / {conditionLabel(s.condition)}</td>
+                    <td>{qualityLabel(s._suggestQ)} / {conditionLabel(s._suggestC)}</td>
                     <td>
                       <select className="cell-input" value={edit.quality || ''} onChange={e => updateReview(s._reviewKey, 'quality', e.target.value)}>
                         <option value="" style={{ color: '#111' }}>—</option>
-                        {ratingOptions.map(x => <option key={x} value={x} style={{ color: '#111' }}>{x}</option>)}
+                        {ratingOptions.map(([code, label]) => <option key={code} value={code} style={{ color: '#111' }}>{code} {label}</option>)}
                       </select>
                     </td>
                     <td>
                       <select className="cell-input" value={edit.condition || ''} onChange={e => updateReview(s._reviewKey, 'condition', e.target.value)}>
                         <option value="" style={{ color: '#111' }}>—</option>
-                        {conditionOptions.map(x => <option key={x} value={x} style={{ color: '#111' }}>{x}</option>)}
+                        {conditionOptions.map(([code, label]) => <option key={code} value={code} style={{ color: '#111' }}>{code} {label}</option>)}
                       </select>
                     </td>
                     <td><em className={s._risk >= 70 ? 'flag-warn' : 'flag-good'}>{s._reason}</em></td>
@@ -998,8 +1022,8 @@ function QCAnalyzer({ sales, setSales, subject }) {
             {sales.slice(0, 15).map((s, i) => (
               <tr key={i}>
                 <td>{s.address || '—'}</td>
-                <td>{s.quality || '—'}</td>
-                <td>{s.condition || '—'}</td>
+                <td>{qualityLabel(s.quality)}</td>
+                <td>{conditionLabel(s.condition)}</td>
                 <td><em className={s.qc_source ? 'flag-good' : 'flag-warn'}>{s.qc_source || 'Not rated yet'}</em></td>
               </tr>
             ))}
