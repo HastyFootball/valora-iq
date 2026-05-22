@@ -66,8 +66,8 @@ function autoMapHeaders(headers) { const map = {}; headers.forEach((h, i) => { c
 function rowsFromMapping(headers, rows, map) { return rows.map((cells, i) => { const get = f => map[f] !== undefined && map[f] !== '' ? cells[Number(map[f])] || '' : ''; return { _id: i, address: get('address'), city: get('city'), state: get('state'), zip: get('zip'), status: get('status') || 'Sold', sale_price_n: toNum(get('sale_price')), gla_n: toNum(get('gla')), site_sf_n: toNum(get('site_sf')), year_built_n: toNum(get('year_built')), sale_date: get('sale_date'), quality: get('quality'), condition: get('condition'), garage: get('garage'), basement: get('basement'), pool: get('pool'), dom: toNum(get('dom')), concessions_n: toNum(get('concessions')), lat: toNum(get('lat')) || null, lon: toNum(get('lon')) || null }; }).filter(r => r.address || r.sale_price_n || r.gla_n); }
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
-const appraiserTabs = ['Dashboard', 'Projects', 'Subject Property', 'MLS Import', 'Q/C Analyzer', 'Market Conditions', 'GLA Study', 'Comp Ranking', 'Site / Land Value', 'Adjustment Grid', 'Concessions', 'Reconciliation', 'Narrative', 'Export Workfile', 'Photos / Exhibits', 'AI Assistant'];
-const agentTabs = ['Dashboard', 'Projects', 'Property Overview', 'MLS Import', 'Market Snapshot', 'Pricing Strategy', 'Comp Ranking', 'Seller Net Sheet', 'Listing Presentation', 'Photos', 'AI Assistant', 'CMA Export'];
+const appraiserTabs = ['Dashboard', 'Projects', 'Subject Property', 'MLS Import', 'Q/C Analyzer', 'Market Conditions', 'GLA Study', 'Comp Ranking', 'Site / Land Value', 'Adjustment Grid', 'Concessions', 'Reconciliation', 'Narrative', 'Export Workfile', 'Photos / Exhibits'];
+const agentTabs = ['Dashboard', 'Projects', 'Property Overview', 'MLS Import', 'Market Snapshot', 'Pricing Strategy', 'Comp Ranking', 'Seller Net Sheet', 'Listing Presentation', 'Photos', 'CMA Export'];
 function slug(s) { return s.toLowerCase().replace(/\//g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/, ''); }
 function iconFor(t) { if (t.includes('Import')) return '⬆'; if (t.includes('Market') || t.includes('Snapshot')) return '↗'; if (t.includes('Export') || t.includes('Workfile')) return '⇩'; if (t.includes('Project')) return '▣'; if (t.includes('AI')) return '✦'; if (t.includes('Photo')) return '◉'; if (t.includes('Net')) return '$'; if (t.includes('Comp')) return '★'; if (t.includes('Q/C')) return '◆'; if (t.includes('Site')) return '◌'; if (t.includes('GLA')) return '⌖'; if (t.includes('Concession')) return '©'; if (t.includes('Reconcil')) return '⊞'; if (t.includes('Narrative')) return '✎'; if (t.includes('Pricing')) return '$'; return '⌂'; }
 
@@ -117,7 +117,7 @@ function Landing() {
         <section className="section pricing" id="pricing">
           <p className="eyebrow center">Pricing</p>
           <h2>Start free. Save your work to the cloud.</h2>
-          <p className="muted max center-block">Create an account to save projects, access AI-assisted narrative tools, and export workfiles. Sign up to get started at no cost.</p>
+          <p className="muted max center-block">Create an account to save projects, access narrative tools, and export workfiles. Sign up to get started at no cost.</p>
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <Link className="btn gold" to="/signup">Create free account →</Link>
           </div>
@@ -473,7 +473,10 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
   if (tab === 'Seller Net Sheet') return <SellerNet />;
   if (tab.includes('Presentation') || tab === 'CMA Export') return <ExportLike title={tab} items={['Pricing snapshot', 'Active/pending/sold summary', 'Selected comps', 'Seller net sheet', 'Talking points']} />;
   if (tab.includes('Photos')) return <Photos persona={persona} />;
-  if (tab === 'AI Assistant') return <Assistant persona={persona} subject={subject} sales={sales} adjRows={adjRows} glaNarData={glaNarData} mtNarData={mtNarData} />;
+  if (tab === 'AI Assistant') {
+    setRoute('Dashboard');
+    return null;
+  }
   return <Panel title={tab} eyebrow={persona === 'appraiser' ? 'Appraiser Workflow' : 'Agent Workflow'} copy="This section is part of the ValoraIQ platform." />;
 }
 
