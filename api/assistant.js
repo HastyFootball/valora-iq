@@ -6,6 +6,10 @@ export default async function handler(req, res) {
   try {
     const { system, messages } = req.body;
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(500).json({ error: "Missing ANTHROPIC_API_KEY in Vercel environment variables." });
+    }
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -30,7 +34,10 @@ export default async function handler(req, res) {
     }
 
     const text =
-      data.content?.filter(block => block.type === "text").map(block => block.text).join("") || "";
+      data.content
+        ?.filter(block => block.type === "text")
+        .map(block => block.text)
+        .join("") || "";
 
     return res.status(200).json({ text });
   } catch (err) {
