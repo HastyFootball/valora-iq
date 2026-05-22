@@ -1949,6 +1949,7 @@ function Assistant({ persona, subject, sales, adjRows, glaNarData, mtNarData }) 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copyStatus, setCopyStatus] = useState('');
   const bottomRef = useRef(null);
 
   const appraiserPrompts = [
@@ -1957,81 +1958,129 @@ function Assistant({ persona, subject, sales, adjRows, glaNarData, mtNarData }) 
     'Review my adjustment grid and flag potential outliers',
     'Write reconciliation addendum language',
   ];
+
   const agentPrompts = [
     'Create seller talking points from my comp data',
     'Summarize market activity for my listing presentation',
     'Write a pricing strategy narrative',
     'Draft an intro for my listing presentation',
   ];
+
   const prompts = persona === 'appraiser' ? appraiserPrompts : agentPrompts;
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   function buildContext() {
     const parts = [];
-    if (persona === 'appraiser') {
-      parts.push(`You are an AI workflow assistant inside ValoraIQ, a professional real estate appraisal platform. You help appraisers draft editable narrative language, analyze market data, and support workfile documentation. You do not make final appraisal conclusions — those remain the appraiser's professional responsibility under USPAP.`);
-    } else {
-      parts.push(`You are an AI workflow assistant inside ValoraIQ, a professional real estate CMA and listing presentation platform for agents and brokers. You help agents craft compelling narratives, summarize market data, and prepare seller-facing materials. You do not replace the agent's professional pricing judgment.`);
+
+    parts.push(
+      persona === 'appraiser'
+        ? `You are an AI workflow assistant inside ValoraIQ, a professional real estate appraisal platform. Help appraisers draft editable narrative language, analyze market data, and support workfile documentation. Do not make final appraisal conclusions.`
+        : `You are an AI workflow assistant inside ValoraIQ, a professional CMA and listing presentation platform. Help agents summarize market data and prepare seller-facing materials. Do not replace professional pricing judgment.`
+    );
+
+    if (subject?.address) {
+      parts.push(`Subject property: ${[subject.address, subject.city].filter(Boolean).join(', ')}. GLA: ${subject.gla || 'unknown'} SF. Year: ${subject.year || 'unknown'}. Quality: ${subject.qual || 'unknown'}. Condition: ${subject.cond || 'unknown'}. Effective date: ${subject.effdate || 'unknown'}.`);
     }
-    if (subject?.address) parts.push(`Subject property: ${[subject.address, subject.city].filter(Boolean).join(', ')}. GLA: ${subject.gla || 'unknown'} SF. Year: ${subject.year || 'unknown'}. Quality: ${subject.qual || 'unknown'}. Condition: ${subject.cond || 'unknown'}. Effective date: ${subject.effdate || 'unknown'}.`);
+
     if (sales.length) {
       const prices = sales.map(s => s.sale_price_n).filter(v => isFinite(v) && v > 0);
-      const med = prices.length ? median(prices) : null;
-      parts.push(`Imported sales: ${sales.length} records. Median sale price: ${med ? money(med) : 'unknown'}. Price range: ${prices.length ? `${money(Math.min(...prices))} – ${money(Math.max(...prices))}` : 'unknown'}.`);
+      parts.push(`Imported sales: ${sales.length}. Median sale price: ${prices.length ? money(median(prices)) : 'unknown'}. Price range: ${prices.length ? `${money(Math.min(...prices))} – ${money(Math.max(...prices))}` : 'unknown'}.`);
     }
-    if (mtNarData?.monthly) parts.push(`Market conditions: ${mtNarData.monthly.toFixed(3)}% per month (${(mtNarData.monthly * 12).toFixed(2)}% annualized), direction: ${mtNarData.dir || 'unknown'}.`);
-    if (glaNarData?.rate) parts.push(`GLA adjustment rate: $${fmt(glaNarData.rate, 2)}/SF via ${glaNarData.method || 'analysis'}.`);
+
+    if (mtNarData?.monthly) {
+      parts.push(`Market conditions: ${mtNarData.monthly.toFixed(3)}% per month, direction: ${mtNarData.dir || 'unknown'}.`);
+    }
+
+    if (glaNarData?.rate) {
+      parts.push(`GLA adjustment rate: $${fmt(glaNarData.rate, 2)}/SF via ${glaNarData.method || 'analysis'}.`);
+    }
+
     if (adjRows.length) {
       const vals = adjRows.map(r => r.adjusted).filter(v => v > 0);
-      if (vals.length) parts.push(`Adjustment grid: ${adjRows.length} comps. Adjusted range: ${money(Math.min(...vals))} – ${money(Math.max(...vals))}. Median adjusted: ${money(median(vals))}.`);
+      if (vals.length) {
+        parts.push(`Adjustment grid: ${adjRows.length} comps. Adjusted range: ${money(Math.min(...vals))} – ${money(Math.max(...vals))}. Median adjusted: ${money(median(vals))}.`);
+      }
     }
+
     return parts.join('\n\n');
   }
 
   async function sendMessage(text) {
     const userText = text || input.trim();
     if (!userText) return;
+
     setInput('');
     setError('');
+    setCopyStatus('');
+
     const newMessages = [...messages, { role: 'user', content: userText }];
     setMessages(newMessages);
     setLoading(true);
+
     try {
-      const systemContext = buildContext();
-      const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: systemContext,
-          messages: apiMessages,
-        }),
+          system: buildContext(),
+          messages: newMessages.map(m => ({
+            role: m.role,
+            content: m.content
+          }))
+        })
       });
+
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `API error ${response.status}`);
+        throw new Error(data.error || `API error ${response.status}`);
       }
-      const data = await response.json();
-      const assistantText = data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
-      setMessages([...newMessages, { role: 'assistant', content: assistantText }]);
+
+      setMessages([...newMessages, {
+        role: 'assistant',
+        content: data.text || 'No response returned.'
+      }]);
     } catch (err) {
-      setError(err.message || 'Request failed. Check your network connection and try again.');
+      setError(err.message || 'Request failed.');
     } finally {
       setLoading(false);
     }
   }
 
-  function handleKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+  async function copyConversation() {
+    const txt = messages.map(m => `${m.role === 'user' ? 'You' : 'ValoraIQ AI'}: ${m.content}`).join('\n\n');
+
+    try {
+      await navigator.clipboard.writeText(txt);
+      setCopyStatus('Conversation copied.');
+    } catch {
+      const area = document.createElement('textarea');
+      area.value = txt;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      document.body.removeChild(area);
+      setCopyStatus('Conversation copied.');
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
 
   return (
     <div className="dash-page">
       <section className="panel-card">
         <p className="eyebrow">AI Workflow Assistant</p>
         <h1>{persona === 'appraiser' ? 'Narrative and evidence support' : 'Seller conversation support'}</h1>
-        <p className="muted max">Ask questions or select a prompt below. The assistant has access to your current project data — subject property, imported sales, market conditions, GLA rates, and adjustment grid.</p>
+        <p className="muted max">Ask questions or select a prompt below. The assistant uses your current project data.</p>
+
         <div className="prompt-grid">
           {prompts.map(p => (
             <button key={p} onClick={() => sendMessage(p)} disabled={loading}>{p}</button>
@@ -2042,6 +2091,7 @@ function Assistant({ persona, subject, sales, adjRows, glaNarData, mtNarData }) 
       {(messages.length > 0 || loading || error) && (
         <section className="panel-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <h2>Conversation</h2>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
             {messages.map((m, i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
@@ -2051,18 +2101,17 @@ function Assistant({ persona, subject, sales, adjRows, glaNarData, mtNarData }) 
                 <span style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: 4 }}>{m.role === 'user' ? 'You' : 'ValoraIQ AI'}</span>
               </div>
             ))}
-            {loading && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', color: 'var(--muted)', fontSize: '0.9rem' }}>Thinking…</div>
-              </div>
-            )}
+
+            {loading && <div className="status-banner">Thinking…</div>}
             {error && <div className="status-banner">{error}</div>}
+            {copyStatus && <div className="status-banner success">{copyStatus}</div>}
             <div ref={bottomRef} />
           </div>
+
           {messages.length > 0 && (
             <div className="btn-row">
-              <button className="btn ghost small" onClick={() => { const txt = messages.map(m => `${m.role === 'user' ? 'You' : 'AI'}: ${m.content}`).join('\n\n'); navigator.clipboard?.writeText(txt); }}>Copy conversation</button>
-              <button className="btn ghost small" onClick={() => { setMessages([]); setError(''); }}>Clear</button>
+              <button className="btn ghost small" onClick={copyConversation}>Copy conversation</button>
+              <button className="btn ghost small" onClick={() => { setMessages([]); setError(''); setCopyStatus(''); }}>Clear</button>
             </div>
           )}
         </section>
@@ -2076,14 +2125,13 @@ function Assistant({ persona, subject, sales, adjRows, glaNarData, mtNarData }) 
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask a question or request a narrative draft… (Enter to send, Shift+Enter for new line)"
+            placeholder="Ask a question or request a narrative draft…"
             disabled={loading}
           />
-          <button className="btn gold" onClick={() => sendMessage()} disabled={loading || !input.trim()} style={{ minWidth: 80, alignSelf: 'flex-end' }}>
+          <button className="btn gold" onClick={() => sendMessage()} disabled={loading || !input.trim()} style={{ minWidth: 80 }}>
             {loading ? '…' : 'Send'}
           </button>
         </div>
-        <p className="muted" style={{ marginTop: 8, fontSize: '0.75rem' }}>AI workflow assistance only. Appraisers and agents remain responsible for all professional conclusions.</p>
       </section>
     </div>
   );
