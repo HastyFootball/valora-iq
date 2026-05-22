@@ -1006,42 +1006,120 @@ function QCAnalyzer({ sales, setSales, subject }) {
     </div>
   );
 }
+
 // ── Market Conditions ─────────────────────────────────────────────────────────
-function MarketLineChart({ points, max }) {
+function MarketLineChart({ points, max, showRaw = true, showModified = true }) {
   if (!points.length) return <div className="status-banner">No valid market trend points available.</div>;
-  const w = 720, h = 220, pad = 34;
-  const vals = points.map(p => p.yMod).filter(v => isFinite(v));
-  const minY = Math.min(...vals), maxY = Math.max(max || 1, ...vals);
+
+  const w = 820, h = 280, pad = 42;
+  const allVals = points
+    .flatMap(p => [showRaw ? p.y : null, showModified ? p.yMod : null])
+    .filter(v => isFinite(v));
+
+  const minY = Math.min(...allVals);
+  const maxY = Math.max(max || 1, ...allVals);
   const span = Math.max(1, maxY - minY);
   const denom = Math.max(1, points.length - 1);
+
   const coords = points.map((p, i) => {
     const x = pad + (i / denom) * (w - pad * 2);
-    const y = h - pad - ((p.yMod - minY) / span) * (h - pad * 2);
-    return { ...p, x, y };
+    const rawY = h - pad - ((p.y - minY) / span) * (h - pad * 2);
+    const modY = h - pad - ((p.yMod - minY) / span) * (h - pad * 2);
+    return { ...p, x, rawY, modY };
   });
-  const d = coords.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+
+  const rawPath = coords.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(1)} ${p.rawY.toFixed(1)}`).join(' ');
+  const modPath = coords.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(1)} ${p.modY.toFixed(1)}`).join(' ');
+
   return (
     <div className="market-line-wrap">
-      <svg className="market-line-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Median sale price line graph">
+      <div className="btn-row" style={{ marginBottom: 10 }}>
+        {showRaw && <span className="status-pill">Gold = Raw Median</span>}
+        {showModified && <span className="status-pill">Cyan = Modified / Trend Median</span>}
+      </div>
+
+      <svg className="market-line-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Market conditions trend graph">
         <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} />
         <line x1={pad} y1={pad} x2={pad} y2={h - pad} />
-        <path d={d} />
-        {coords.map(p => <g key={p.key}><circle cx={p.x} cy={p.y} r="4"><title>{p.key}: {money(p.yMod)} ({p.n} sales)</title></circle><text x={p.x} y={h - 10} textAnchor="middle">{p.key}</text></g>)}
+
+        {showRaw && <path d={rawPath} style={{ stroke: 'var(--gold)', opacity: 0.75, strokeDasharray: '6 5' }} />}
+        {showModified && <path d={modPath} />}
+
+        {coords.map(p => (
+          <g key={p.key}>
+            {showRaw && (
+              <circle cx={p.x} cy={p.rawY} r="4" style={{ fill: 'var(--gold)' }}>
+                <title>{p.key} Raw: {money(p.y)} ({p.n} sales)</title>
+              </circle>
+            )}
+            {showModified && (
+              <circle cx={p.x} cy={p.modY} r="4">
+                <title>{p.key} Modified: {money(p.yMod)} ({p.n} sales)</title>
+              </circle>
+            )}
+            <text x={p.x} y={h - 10} textAnchor="middle">{p.key}</text>
+          </g>
+        ))}
       </svg>
     </div>
   );
 }
 
 function MarketConditions({ persona, sales, setMtNarData, marketStudyState, setMarketStudyState, setAdjustmentDefaults }) {
-  const state = marketStudyState || { mode: 'rolling3', minSales: 1, ran: false };
+  const state = marketStudyState || {
+    mode: 'rolling3',
+    minSales: 1,
+    ran: false,
+    showRaw: true,
+    showModified: true
+  };
+
   const mode = state.mode ?? 'rolling3';
   const minSales = state.minSales ?? 1;
   const ran = !!state.ran;
+  const showRaw = state.showRaw ?? true;
+  const showModified = state.showModified ?? true;
+
   const series = useMemo(() => marketSeries(sales, minSales, mode), [sales, minSales, mode]);
 
   function updateState(patch) {
-    setMarketStudyState(prev => ({ ...(prev || { mode: 'rolling3', minSales: 1, ran: false }), ...patch }));
+    setMarketStudyState(prev => ({
+      ...(prev || { mode: 'rolling3', minSales: 1, ran: false, showRaw: true, showModified: true }),
+      ...patch
+    }));
   }
+
+  function pctChange(current, previous) {
+    if (!current || !previous || !isFinite(current) || !isFinite(previous)) return null;
+    return ((current - previous) / previous) * 100;
+  }
+
+  function formatPctChange(v) {
+    if (v === null || v === undefined || !isFinite(v)) return '—';
+    return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+  }
+
+  function adjustmentText(v) {
+    if (v === null || v === undefined || !isFinite(v)) return '—';
+    if (Math.abs(v) < 0.1) return 'No material adjustment';
+    return `${v >= 0 ? '+' : ''}${v.toFixed(2)}% to current period`;
+  }
+
+  const latestPoint = series.points[series.points.length - 1];
+
+  const rows = series.points.map((p, i) => {
+    const prev = i > 0 ? series.points[i - 1] : null;
+    const momRaw = prev ? pctChange(p.y, prev.y) : null;
+    const momModified = prev ? pctChange(p.yMod, prev.yMod) : null;
+    const cumulativeToLatest = latestPoint ? pctChange(latestPoint.yMod, p.yMod) : null;
+
+    return {
+      ...p,
+      momRaw,
+      momModified,
+      cumulativeToLatest
+    };
+  });
 
   function generate() {
     const dir = series.monthly > 0.1 ? 'increasing' : series.monthly < -0.1 ? 'declining' : 'stable';
@@ -1050,44 +1128,116 @@ function MarketConditions({ persona, sales, setMtNarData, marketStudyState, setM
     setAdjustmentDefaults(prev => ({ ...(prev || {}), mtRate: Number(series.monthly || 0) }));
   }
 
-  const modeLabels = { raw: 'Raw period medians', rolling3: 'Rolling 3-month median', quarterly: 'Quarterly modifier', weighted: 'Weighted trend line' };
+  const modeLabels = {
+    raw: 'Raw period medians',
+    rolling3: 'Rolling 3-month median',
+    quarterly: 'Quarterly modifier',
+    weighted: 'Weighted trend line'
+  };
+
   return (
     <div className="dash-page">
       <section className="panel-card">
         <p className="eyebrow">{persona === 'appraiser' ? 'Market Conditions Tool' : 'Market Snapshot'}</p>
         <h1>{persona === 'appraiser' ? 'Market Conditions / Rolling Modifier' : 'Active / Pending / Sold Market Snapshot'}</h1>
-        <p className="muted max">Rolling 3-month median, quarterly grouping, and weighted trend line options. Import MLS data first to populate this analysis. Generated results now stay visible when you leave this tab and feed the Adjustment Grid.</p>
+        <p className="muted max">
+          View raw and modified market trends, month-to-month movement, and cumulative change to the latest period for appraisal market adjustment support.
+        </p>
+
         <div className="form-grid compact">
-          <label>Modifier Method<select value={mode} onChange={e => updateState({ mode: e.target.value, ran: false })}><option value="raw">Off — raw period medians</option><option value="rolling3">Rolling 3-month median</option><option value="quarterly">Quarterly modifier</option><option value="weighted">Weighted trend line by sale count</option></select></label>
-          <label>Minimum Sales Per Period<input type="number" value={minSales} min="1" onChange={e => updateState({ minSales: Number(e.target.value) || 1, ran: false })} /></label>
+          <label>
+            Modifier Method
+            <select value={mode} onChange={e => updateState({ mode: e.target.value, ran: false })}>
+              <option value="raw">Off — raw period medians</option>
+              <option value="rolling3">Rolling 3-month median</option>
+              <option value="quarterly">Quarterly modifier</option>
+              <option value="weighted">Weighted trend line by sale count</option>
+            </select>
+          </label>
+
+          <label>
+            Minimum Sales Per Period
+            <input type="number" value={minSales} min="1" onChange={e => updateState({ minSales: Number(e.target.value) || 1, ran: false })} />
+          </label>
         </div>
+
+        <div className="btn-row" style={{ marginTop: 12 }}>
+          <label className="status-pill">
+            <input type="checkbox" checked={showRaw} onChange={e => updateState({ showRaw: e.target.checked })} /> Show Raw Line
+          </label>
+
+          <label className="status-pill">
+            <input type="checkbox" checked={showModified} onChange={e => updateState({ showModified: e.target.checked })} /> Show Modified Line
+          </label>
+        </div>
+
         <div className="btn-row">
           <button className="btn gold" onClick={generate} disabled={!sales.length}>Generate Market Study</button>
           {!sales.length && <span className="muted">Import MLS data first.</span>}
           {ran && <span className="status-pill">Study generated using {modeLabels[mode]}</span>}
           {ran && <span className="status-pill">Carried to Adjustment Grid</span>}
         </div>
+
         {ran && (
           <div className="metric-grid four">
-            <div><b>{series.monthly.toFixed(3)}%</b><span>Monthly Rate</span></div>
+            <div><b>{series.monthly.toFixed(3)}%</b><span>Avg Monthly Rate</span></div>
             <div><b>{(series.monthly * 12).toFixed(2)}%</b><span>Annualized</span></div>
             <div><b>{series.points.length}</b><span>Periods Used</span></div>
             <div><b>{series.monthly > 0.1 ? '↑ Increasing' : series.monthly < -0.1 ? '↓ Declining' : '→ Stable'}</b><span>Direction</span></div>
           </div>
         )}
       </section>
-      {ran
-        ? <section className="chart-card">
-            <h2>Median Sale Price Trend</h2>
-            <MarketLineChart points={series.points} max={series.max} />
-            <div className="table-card embedded">
-              <table><thead><tr><th>Period</th><th>Sales</th><th>Raw Median</th><th>Modified Median</th></tr></thead>
-                <tbody>{series.points.map(p => <tr key={p.key}><td>{p.key}</td><td>{p.n}</td><td>{money(p.y)}</td><td>{money(p.yMod)}</td></tr>)}</tbody>
-              </table>
-            </div>
+
+      {ran ? (
+        <section className="chart-card">
+          <h2>Median Sale Price Trend</h2>
+          <MarketLineChart points={series.points} max={series.max} showRaw={showRaw} showModified={showModified} />
+
+          <div className="table-card embedded" style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Sales</th>
+                  <th>Raw Median</th>
+                  <th>Modified Median</th>
+                  <th>Raw MoM %</th>
+                  <th>Modified MoM %</th>
+                  <th>Change to Latest</th>
+                  <th>Suggested Adjustment</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {rows.map(p => (
+                  <tr key={p.key}>
+                    <td>{p.key}</td>
+                    <td>{p.n}</td>
+                    <td>{money(p.y)}</td>
+                    <td>{money(p.yMod)}</td>
+                    <td>{formatPctChange(p.momRaw)}</td>
+                    <td>{formatPctChange(p.momModified)}</td>
+                    <td>{formatPctChange(p.cumulativeToLatest)}</td>
+                    <td>{adjustmentText(p.cumulativeToLatest)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <section className="panel-card" style={{ marginTop: 16 }}>
+            <h2>How to read this</h2>
+            <p className="muted">
+              <strong>MoM %</strong> shows month-to-month market movement. <strong>Change to Latest</strong> estimates the cumulative adjustment from that sale period to the latest period in the dataset. Use professional judgment before applying any adjustment.
+            </p>
           </section>
-        : <section className="panel-card"><h2>Ready to generate</h2><p className="muted">{sales.length ? 'Choose a modifier, then click Generate Market Study.' : 'Import MLS data first, then return here to run the market study.'}</p></section>
-      }
+        </section>
+      ) : (
+        <section className="panel-card">
+          <h2>Ready to generate</h2>
+          <p className="muted">{sales.length ? 'Choose a modifier, then click Generate Market Study.' : 'Import MLS data first, then return here to run the market study.'}</p>
+        </section>
+      )}
     </div>
   );
 }
