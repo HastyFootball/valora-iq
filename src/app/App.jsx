@@ -773,242 +773,239 @@ function Distribution({ title, data }) {
     </section>
   );
 }
-function QCAnalyzer({
-  sales,
-  setSales,
-  subject
-}) {
-  const [qcRows, setQcRows] = React.useState([]);
+function QCAnalyzer({ sales, setSales, subject }) {
+  const [ran, setRan] = useState(false);
+  const [reviewEdits, setReviewEdits] = useState({});
+  const [applyMessage, setApplyMessage] = useState('');
+  const ratingOptions = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'];
+  const conditionOptions = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6'];
 
-  React.useEffect(() => {
-    if (!sales?.length) return;
+  const sampleSize = Math.max(5, Math.ceil((sales.length || 0) * 0.1));
 
-    const sampleSize = Math.max(
-      5,
-      Math.round(sales.length * 0.1)
-    );
+  const flagged = useMemo(() => {
+    return [...sales]
+      .map((s, i) => {
+        const key = s._id ?? `${s.address || 'sale'}-${i}`;
+        const missing = !s.quality || !s.condition;
+        const qn = ratingNum(subject.qual);
+        const cn = ratingNum(subject.cond);
+        const qnum = ratingNum(s.quality);
+        const cnum = ratingNum(s.condition);
+        const qdiff = qn && qnum ? Math.abs(qnum - qn) : 0;
+        const cdiff = cn && cnum ? Math.abs(cnum - cn) : 0;
+        const risk = missing ? 95 : qdiff > 1 || cdiff > 1 ? 80 : 35;
 
-    const shuffled = [...sales]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, sampleSize);
-
-    const initialized = shuffled.map((sale) => ({
-      ...sale,
-      qRating: sale.qRating || "",
-      cRating: sale.cRating || ""
-    }));
-
-    setQcRows(initialized);
-  }, [sales]);
-
-  const updateRow = (idx, field, value) => {
-    setQcRows((prev) =>
-      prev.map((row, i) =>
-        i === idx
-          ? { ...row, [field]: value }
-          : row
-      )
-    );
-  };
-
-  const applyReviewSamples = () => {
-    const reviewed = qcRows.filter(
-      (r) => r.qRating && r.cRating
-    );
-
-    if (!reviewed.length) return;
-
-    const avgQ =
-      reviewed.reduce(
-        (sum, r) =>
-          sum + Number(r.qRating || 0),
-        0
-      ) / reviewed.length;
-
-    const avgC =
-      reviewed.reduce(
-        (sum, r) =>
-          sum + Number(r.cRating || 0),
-        0
-      ) / reviewed.length;
-
-    const updatedSales = sales.map((sale) => {
-      const reviewedMatch = reviewed.find(
-        (r) => r.id === sale.id
-      );
-
-      // Preserve manually reviewed rows
-      if (reviewedMatch) {
         return {
-          ...sale,
-          qRating: reviewedMatch.qRating,
-          cRating: reviewedMatch.cRating
+          ...s,
+          _reviewKey: key,
+          _risk: risk,
+          _suggestQ: s.quality || subject.qual || 'Q3',
+          _suggestC: s.condition || subject.cond || 'C3',
+          _reason: missing ? 'Needs review' : 'Check rating'
+        };
+      })
+      .sort((a, b) => b._risk - a._risk)
+      .slice(0, sampleSize);
+  }, [sales, subject.qual, subject.cond, sampleSize]);
+
+  const counts = (field, prefix) =>
+    ['1', '2', '3', '4', '5', '6'].map(n => {
+      const key = prefix + n;
+      return [key, sales.filter(s => String(s[field] || '').toUpperCase().startsWith(key)).length];
+    });
+
+  const q = counts('quality', 'Q');
+  const c = counts('condition', 'C');
+  const qn = ratingNum(subject.qual);
+  const cn = ratingNum(subject.cond);
+
+  useEffect(() => {
+    if (!ran) return;
+    const next = {};
+    flagged.forEach(s => {
+      next[s._reviewKey] = reviewEdits[s._reviewKey] || {
+        quality: s.quality || s._suggestQ,
+        condition: s.condition || s._suggestC
+      };
+    });
+    setReviewEdits(next);
+  }, [ran, sales.length, subject.qual, subject.cond]);
+
+  function updateReview(key, field, value) {
+    setApplyMessage('');
+    setReviewEdits(prev => ({
+      ...prev,
+      [key]: {
+        ...(prev[key] || {}),
+        [field]: value
+      }
+    }));
+  }
+
+  function similarityScore(a, b) {
+    let score = 0;
+
+    if (a.gla_n && b.gla_n) {
+      score += Math.max(0, 40 - Math.abs(a.gla_n - b.gla_n) / 50);
+    }
+
+    if (a.sale_price_n && b.sale_price_n) {
+      score += Math.max(0, 30 - Math.abs(a.sale_price_n - b.sale_price_n) / 10000);
+    }
+
+    if (a.year_built_n && b.year_built_n) {
+      score += Math.max(0, 20 - Math.abs(a.year_built_n - b.year_built_n));
+    }
+
+    if (a.site_sf_n && b.site_sf_n) {
+      score += Math.max(0, 10 - Math.abs(a.site_sf_n - b.site_sf_n) / 1000);
+    }
+
+    return score;
+  }
+
+  function applyReviewSamples() {
+    const reviewed = flagged
+      .map(s => ({
+        ...s,
+        quality: reviewEdits[s._reviewKey]?.quality || s.quality || '',
+        condition: reviewEdits[s._reviewKey]?.condition || s.condition || ''
+      }))
+      .filter(s => s.quality && s.condition);
+
+    if (!reviewed.length) {
+      setApplyMessage('Select Q and C ratings for the review samples first.');
+      return;
+    }
+
+    const updated = sales.map((s, i) => {
+      const key = s._id ?? `${s.address || 'sale'}-${i}`;
+      const manual = reviewed.find(r => r._reviewKey === key);
+
+      if (manual) {
+        return {
+          ...s,
+          quality: manual.quality,
+          condition: manual.condition,
+          qc_reviewed: true,
+          qc_source: 'manual sample'
         };
       }
 
-      let qEstimate = avgQ;
-      let cEstimate = avgC;
-
-      // Similarity logic
-      if (
-        Number(sale.yearBuilt || 0) >
-        Number(subject?.yearBuilt || 0)
-      ) {
-        qEstimate += 0.5;
-        cEstimate += 0.5;
-      }
-
-      if (
-        Number(sale.gla || 0) >
-        Number(subject?.gla || 0)
-      ) {
-        qEstimate += 0.25;
-      }
-
-      if (
-        Number(sale.salePrice || 0) <
-        Number(subject?.salePrice || 0)
-      ) {
-        cEstimate -= 0.25;
-      }
-
-      qEstimate = Math.max(
-        1,
-        Math.min(6, qEstimate)
-      );
-
-      cEstimate = Math.max(
-        1,
-        Math.min(6, cEstimate)
-      );
+      const nearest = reviewed
+        .map(r => ({ r, score: similarityScore(s, r) }))
+        .sort((a, b) => b.score - a.score)[0]?.r;
 
       return {
-        ...sale,
-        qRating: Math.round(qEstimate),
-        cRating: Math.round(cEstimate)
+        ...s,
+        quality: nearest?.quality || s.quality || subject.qual || 'Q3',
+        condition: nearest?.condition || s.condition || subject.cond || 'C3',
+        qc_reviewed: false,
+        qc_source: 'estimated from reviewed sample'
       };
     });
 
-    setSales(updatedSales);
-
-    alert(
-      "Q/C ratings applied to all imported sales."
-    );
-  };
+    setSales(updated);
+    setApplyMessage(`Applied Q/C ratings to all ${updated.length} imported sales using ${reviewed.length} reviewed sample(s).`);
+  }
 
   return (
-    <section className="card">
-      <div className="section-header">
-        <div>
-          <h2>
-            10% Suggested Q/C Review Samples
-          </h2>
-          <span>
-            Review sample sales, then apply
-            ratings to all imported comps.
-          </span>
+    <div className="dash-page">
+      <section className="panel-card">
+        <p className="eyebrow">Appraiser Tool</p>
+        <h1>Q/C Analyzer</h1>
+        <p className="muted max">Review a sample of imported sales, then ValoraIQ estimates Q/C ratings for the remaining sales based on similarity.</p>
+
+        <div className="btn-row">
+          <button className="btn gold" onClick={() => { setRan(true); setApplyMessage(''); }}>
+            Analyze Q/C + Show Review Samples
+          </button>
+          <button className="btn ghost" onClick={() => { setRan(false); setReviewEdits({}); setApplyMessage(''); }}>
+            Reset
+          </button>
         </div>
 
-        <button
-          className="btn gold small"
-          onClick={applyReviewSamples}
-        >
-          Apply Q/C Rating Adjustments
-        </button>
-      </div>
+        <div className="qc-summary">
+          <div><h2>Subject Quality</h2><b>{subject.qual || '—'}</b><span>{qn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div>
+          <div><h2>Subject Condition</h2><b>{subject.cond || '—'}</b><span>{cn ? 'Rating captured' : 'Set rating in Subject Property'}</span></div>
+        </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Address</th>
-            <th>Price</th>
-            <th>GLA</th>
-            <th>Year</th>
-            <th>Q</th>
-            <th>C</th>
-          </tr>
-        </thead>
+        {applyMessage && <div className="status-banner success">{applyMessage}</div>}
+      </section>
 
-        <tbody>
-          {qcRows.map((row, idx) => (
-            <tr key={idx}>
-              <td>{row.address}</td>
+      <section className="two-col">
+        <Distribution title="Quality Distribution" data={q} />
+        <Distribution title="Condition Distribution" data={c} />
+      </section>
 
-              <td>
-                $
-                {Number(
-                  row.salePrice || 0
-                ).toLocaleString()}
-              </td>
+      {ran && (
+        <section className="table-card">
+          <div className="card-head">
+            <div>
+              <h2>{sampleSize} Suggested Q/C Review Samples</h2>
+              <span>Edit the verified rating for each sample, then apply to all sales.</span>
+            </div>
+            <button className="btn gold small" onClick={applyReviewSamples}>
+              Apply Q/C Rating Adjustments
+            </button>
+          </div>
 
-              <td>{row.gla}</td>
+          <table>
+            <thead>
+              <tr><th>Sale</th><th>Current Q/C</th><th>Suggested</th><th>Verified Q</th><th>Verified C</th><th>Flag</th></tr>
+            </thead>
+            <tbody>
+              {flagged.map(s => {
+                const edit = reviewEdits[s._reviewKey] || {
+                  quality: s.quality || s._suggestQ,
+                  condition: s.condition || s._suggestC
+                };
 
-              <td>{row.yearBuilt}</td>
+                return (
+                  <tr key={s._reviewKey}>
+                    <td>{s.address || '—'}<span>{s.city || ''}</span></td>
+                    <td>{s.quality || '—'} / {s.condition || '—'}</td>
+                    <td>{s._suggestQ} / {s._suggestC}</td>
+                    <td>
+                      <select className="cell-input" value={edit.quality || ''} onChange={e => updateReview(s._reviewKey, 'quality', e.target.value)}>
+                        <option value="" style={{ color: '#111' }}>—</option>
+                        {ratingOptions.map(x => <option key={x} value={x} style={{ color: '#111' }}>{x}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <select className="cell-input" value={edit.condition || ''} onChange={e => updateReview(s._reviewKey, 'condition', e.target.value)}>
+                        <option value="" style={{ color: '#111' }}>—</option>
+                        {conditionOptions.map(x => <option key={x} value={x} style={{ color: '#111' }}>{x}</option>)}
+                      </select>
+                    </td>
+                    <td><em className={s._risk >= 70 ? 'flag-warn' : 'flag-good'}>{s._reason}</em></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+      )}
 
-              <td>
-                <select
-                  value={row.qRating}
-                  onChange={(e) =>
-                    updateRow(
-                      idx,
-                      "qRating",
-                      e.target.value
-                    )
-                  }
-                >
-                  <option value="">
-                    Select
-                  </option>
-
-                  {[1, 2, 3, 4, 5, 6].map(
-                    (q) => (
-                      <option
-                        key={q}
-                        value={q}
-                      >
-                        Q{q}
-                      </option>
-                    )
-                  )}
-                </select>
-              </td>
-
-              <td>
-                <select
-                  value={row.cRating}
-                  onChange={(e) =>
-                    updateRow(
-                      idx,
-                      "cRating",
-                      e.target.value
-                    )
-                  }
-                >
-                  <option value="">
-                    Select
-                  </option>
-
-                  {[1, 2, 3, 4, 5, 6].map(
-                    (c) => (
-                      <option
-                        key={c}
-                        value={c}
-                      >
-                        C{c}
-                      </option>
-                    )
-                  )}
-                </select>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+      <section className="table-card">
+        <div className="card-head"><h2>Q/C Review Flags</h2><span>{sales.length} sales reviewed</span></div>
+        <table>
+          <thead><tr><th>Sale</th><th>Q</th><th>C</th><th>Source</th></tr></thead>
+          <tbody>
+            {sales.slice(0, 15).map((s, i) => (
+              <tr key={i}>
+                <td>{s.address || '—'}</td>
+                <td>{s.quality || '—'}</td>
+                <td>{s.condition || '—'}</td>
+                <td><em className={s.qc_source ? 'flag-good' : 'flag-warn'}>{s.qc_source || 'Not rated yet'}</em></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    </div>
   );
 }
-
-
 // ── Market Conditions ─────────────────────────────────────────────────────────
 function MarketLineChart({ points, max }) {
   if (!points.length) return <div className="status-banner">No valid market trend points available.</div>;
