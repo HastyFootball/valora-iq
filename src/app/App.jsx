@@ -182,7 +182,43 @@ function Auth({ type }) {
 
 // ── Dashboard shell ───────────────────────────────────────────────────────────
 function emptySubject() { return { address: '', city: '', effdate: new Date().toISOString().slice(0, 10), gla: '', site: '', year: '', beds: '', baths: '', garage: '', basement: '', pool: '', qual: '', cond: '', value: '', appraiser: '' }; }
-function emptyWorkspace() { return { subject: emptySubject(), sales: [], selectedComps: [], adjRows: [], glaNarData: { rate: 0, method: '' }, mtNarData: { monthly: 0, dir: 'stable' } }; }
+function emptyWorkspace() {
+  return {
+    subject: emptySubject(),
+    sales: [],
+    selectedComps: [],
+    adjRows: [],
+    glaNarData: { rate: 0, method: '' },
+    mtNarData: { monthly: 0, dir: 'stable' },
+    marketStudyState: { mode: 'rolling3', minSales: 1, ran: false },
+    glaStudyState: {
+      mtRate: 0,
+      regResult: null,
+      pairedRows: [{ pa: '', ga: '', pb: '', gb: '' }],
+      pairedResult: null,
+      applyInputs: { sg: '', cg: '', rate: '', cp: '' },
+      applyResult: null
+    },
+    siteValueState: {
+      land: [],
+      imp: '',
+      total: '',
+      pct: 20,
+      ran: false,
+      selectedRate: 0
+    },
+    adjustmentDefaults: {
+      mtRate: 0,
+      glaRate: 0,
+      siteRate: 0,
+      ageRate: 0,
+      condRate: 0,
+      qualRate: 0,
+      topN: 6,
+      built: false
+    }
+  };
+}
 function projectNameFromData(data, fallback = 'Untitled Project') { return data?.subject?.address || data?.subject?.city || fallback; }
 
 function DashboardShell({ persona, session }) {
@@ -195,6 +231,10 @@ function DashboardShell({ persona, session }) {
   const [adjRows, setAdjRows] = useState(initial.adjRows);
   const [glaNarData, setGlaNarData] = useState(initial.glaNarData);
   const [mtNarData, setMtNarData] = useState(initial.mtNarData);
+  const [marketStudyState, setMarketStudyState] = useState(initial.marketStudyState);
+  const [glaStudyState, setGlaStudyState] = useState(initial.glaStudyState);
+  const [siteValueState, setSiteValueState] = useState(initial.siteValueState);
+  const [adjustmentDefaults, setAdjustmentDefaults] = useState(initial.adjustmentDefaults);
 
   const [cloudStatus, setCloudStatus] = useState('');
   const [projects, setProjects] = useState([]);
@@ -225,7 +265,19 @@ function DashboardShell({ persona, session }) {
   }
 
   function workspacePayload() {
-    return { subject, sales, selectedComps, adjRows, glaNarData, mtNarData, savedAt: new Date().toISOString() };
+    return {
+      subject,
+      sales,
+      selectedComps,
+      adjRows,
+      glaNarData,
+      mtNarData,
+      marketStudyState,
+      glaStudyState,
+      siteValueState,
+      adjustmentDefaults,
+      savedAt: new Date().toISOString()
+    };
   }
 
   function applyWorkspace(data) {
@@ -236,6 +288,33 @@ function DashboardShell({ persona, session }) {
     setAdjRows(Array.isArray(w.adjRows) ? w.adjRows : []);
     setGlaNarData(w.glaNarData || { rate: 0, method: '' });
     setMtNarData(w.mtNarData || { monthly: 0, dir: 'stable' });
+    setMarketStudyState(w.marketStudyState || { mode: 'rolling3', minSales: 1, ran: false });
+    setGlaStudyState(w.glaStudyState || {
+      mtRate: w.mtNarData?.monthly || 0,
+      regResult: null,
+      pairedRows: [{ pa: '', ga: '', pb: '', gb: '' }],
+      pairedResult: null,
+      applyInputs: { sg: w.subject?.gla || '', cg: '', rate: w.glaNarData?.rate || '', cp: '' },
+      applyResult: null
+    });
+    setSiteValueState(w.siteValueState || {
+      land: [],
+      imp: '',
+      total: '',
+      pct: 20,
+      ran: false,
+      selectedRate: 0
+    });
+    setAdjustmentDefaults(w.adjustmentDefaults || {
+      mtRate: w.mtNarData?.monthly || 0,
+      glaRate: w.glaNarData?.rate || 0,
+      siteRate: 0,
+      ageRate: 0,
+      condRate: 0,
+      qualRate: 0,
+      topN: 6,
+      built: false
+    });
   }
 
   async function fetchProjects() {
@@ -359,6 +438,10 @@ function DashboardShell({ persona, session }) {
           adjRows={adjRows} setAdjRows={setAdjRows}
           glaNarData={glaNarData} setGlaNarData={setGlaNarData}
           mtNarData={mtNarData} setMtNarData={setMtNarData}
+          marketStudyState={marketStudyState} setMarketStudyState={setMarketStudyState}
+          glaStudyState={glaStudyState} setGlaStudyState={setGlaStudyState}
+          siteValueState={siteValueState} setSiteValueState={setSiteValueState}
+          adjustmentDefaults={adjustmentDefaults} setAdjustmentDefaults={setAdjustmentDefaults}
           projects={projects} projectsLoading={projectsLoading}
           currentProjectId={currentProjectId} currentProjectName={currentProjectName}
           newProject={newProject} openProject={openProject} deleteProject={deleteProject}
@@ -369,7 +452,7 @@ function DashboardShell({ persona, session }) {
   );
 }
 
-function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSales, selectedComps, setSelectedComps, adjRows, setAdjRows, glaNarData, setGlaNarData, mtNarData, setMtNarData, projects, projectsLoading, currentProjectId, currentProjectName, newProject, openProject, deleteProject, saveProject, fetchProjects }) {
+function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSales, selectedComps, setSelectedComps, adjRows, setAdjRows, glaNarData, setGlaNarData, mtNarData, setMtNarData, marketStudyState, setMarketStudyState, glaStudyState, setGlaStudyState, siteValueState, setSiteValueState, adjustmentDefaults, setAdjustmentDefaults, projects, projectsLoading, currentProjectId, currentProjectName, newProject, openProject, deleteProject, saveProject, fetchProjects }) {
   if (tab === 'Dashboard') return persona === 'appraiser'
     ? <AppraiserHome sales={sales} projects={projects} selectedComps={selectedComps} adjRows={adjRows} currentProjectName={currentProjectName} setRoute={setRoute} newProject={newProject} openProject={openProject} deleteProject={deleteProject} />
     : <AgentHome sales={sales} projects={projects} selectedComps={selectedComps} currentProjectName={currentProjectName} setRoute={setRoute} newProject={newProject} openProject={openProject} deleteProject={deleteProject} />;
@@ -377,11 +460,11 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
   if (tab === 'Subject Property' || tab === 'Property Overview') return <SubjectForm persona={persona} subject={subject} setSubject={setSubject} />;
   if (tab.includes('Import')) return <ImportData persona={persona} sales={sales} setSales={setSales} />;
   if (tab === 'Q/C Analyzer') return <QCAnalyzer sales={sales} setSales={setSales} subject={subject} />;
-  if (tab === 'Market Conditions' || tab === 'Market Snapshot') return <MarketConditions persona={persona} sales={sales} setMtNarData={setMtNarData} />;
-  if (tab === 'GLA Study') return <GLAStudy sales={sales} subject={subject} setGlaNarData={setGlaNarData} />;
+  if (tab === 'Market Conditions' || tab === 'Market Snapshot') return <MarketConditions persona={persona} sales={sales} setMtNarData={setMtNarData} marketStudyState={marketStudyState} setMarketStudyState={setMarketStudyState} setAdjustmentDefaults={setAdjustmentDefaults} />;
+  if (tab === 'GLA Study') return <GLAStudy sales={sales} subject={subject} setGlaNarData={setGlaNarData} glaStudyState={glaStudyState} setGlaStudyState={setGlaStudyState} setAdjustmentDefaults={setAdjustmentDefaults} adjustmentDefaults={adjustmentDefaults} />;
   if (tab === 'Comp Ranking') return <CompRanking subject={subject} setSubject={setSubject} sales={sales} setSales={setSales} selectedComps={selectedComps} setSelectedComps={setSelectedComps} />;
-  if (tab === 'Site / Land Value') return <SiteValue />;
-  if (tab === 'Adjustment Grid') return <Adjustments selectedComps={selectedComps} sales={sales} subject={subject} adjRows={adjRows} setAdjRows={setAdjRows} />;
+  if (tab === 'Site / Land Value') return <SiteValue subject={subject} siteValueState={siteValueState} setSiteValueState={setSiteValueState} setAdjustmentDefaults={setAdjustmentDefaults} />;
+  if (tab === 'Adjustment Grid') return <Adjustments selectedComps={selectedComps} sales={sales} subject={subject} adjRows={adjRows} setAdjRows={setAdjRows} adjustmentDefaults={adjustmentDefaults} setAdjustmentDefaults={setAdjustmentDefaults} />;
   if (tab === 'Concessions') return <Concessions sales={sales} />;
   if (tab === 'Reconciliation') return <Reconciliation adjRows={adjRows} />;
   if (tab === 'Narrative') return <NarrativeBuilder subject={subject} sales={sales} glaNarData={glaNarData} mtNarData={mtNarData} />;
@@ -821,27 +904,40 @@ function MarketLineChart({ points, max }) {
   );
 }
 
-function MarketConditions({ persona, sales, setMtNarData }) {
-  const [mode, setMode] = useState('rolling3');
-  const [minSales, setMinSales] = useState(1);
-  const [ran, setRan] = useState(false);
+function MarketConditions({ persona, sales, setMtNarData, marketStudyState, setMarketStudyState, setAdjustmentDefaults }) {
+  const state = marketStudyState || { mode: 'rolling3', minSales: 1, ran: false };
+  const mode = state.mode ?? 'rolling3';
+  const minSales = state.minSales ?? 1;
+  const ran = !!state.ran;
   const series = useMemo(() => marketSeries(sales, minSales, mode), [sales, minSales, mode]);
-  function generate() { setRan(true); setMtNarData({ monthly: series.monthly, dir: series.monthly > 0.1 ? 'increasing' : series.monthly < -0.1 ? 'declining' : 'stable' }); }
+
+  function updateState(patch) {
+    setMarketStudyState(prev => ({ ...(prev || { mode: 'rolling3', minSales: 1, ran: false }), ...patch }));
+  }
+
+  function generate() {
+    const dir = series.monthly > 0.1 ? 'increasing' : series.monthly < -0.1 ? 'declining' : 'stable';
+    updateState({ ran: true, lastSeries: series });
+    setMtNarData({ monthly: series.monthly, dir });
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), mtRate: Number(series.monthly || 0) }));
+  }
+
   const modeLabels = { raw: 'Raw period medians', rolling3: 'Rolling 3-month median', quarterly: 'Quarterly modifier', weighted: 'Weighted trend line' };
   return (
     <div className="dash-page">
       <section className="panel-card">
         <p className="eyebrow">{persona === 'appraiser' ? 'Market Conditions Tool' : 'Market Snapshot'}</p>
         <h1>{persona === 'appraiser' ? 'Market Conditions / Rolling Modifier' : 'Active / Pending / Sold Market Snapshot'}</h1>
-        <p className="muted max">Rolling 3-month median, quarterly grouping, and weighted trend line options. Import MLS data first to populate this analysis.</p>
+        <p className="muted max">Rolling 3-month median, quarterly grouping, and weighted trend line options. Import MLS data first to populate this analysis. Generated results now stay visible when you leave this tab and feed the Adjustment Grid.</p>
         <div className="form-grid compact">
-          <label>Modifier Method<select value={mode} onChange={e => { setMode(e.target.value); setRan(false); }}><option value="raw">Off — raw period medians</option><option value="rolling3">Rolling 3-month median</option><option value="quarterly">Quarterly modifier</option><option value="weighted">Weighted trend line by sale count</option></select></label>
-          <label>Minimum Sales Per Period<input type="number" value={minSales} min="1" onChange={e => { setMinSales(Number(e.target.value) || 1); setRan(false); }} /></label>
+          <label>Modifier Method<select value={mode} onChange={e => updateState({ mode: e.target.value, ran: false })}><option value="raw">Off — raw period medians</option><option value="rolling3">Rolling 3-month median</option><option value="quarterly">Quarterly modifier</option><option value="weighted">Weighted trend line by sale count</option></select></label>
+          <label>Minimum Sales Per Period<input type="number" value={minSales} min="1" onChange={e => updateState({ minSales: Number(e.target.value) || 1, ran: false })} /></label>
         </div>
         <div className="btn-row">
           <button className="btn gold" onClick={generate} disabled={!sales.length}>Generate Market Study</button>
           {!sales.length && <span className="muted">Import MLS data first.</span>}
           {ran && <span className="status-pill">Study generated using {modeLabels[mode]}</span>}
+          {ran && <span className="status-pill">Carried to Adjustment Grid</span>}
         </div>
         {ran && (
           <div className="metric-grid four">
@@ -869,13 +965,28 @@ function MarketConditions({ persona, sales, setMtNarData }) {
 }
 
 // ── GLA Study ─────────────────────────────────────────────────────────────────
-function GLAStudy({ sales, subject, setGlaNarData }) {
-  const [mtRate, setMtRate] = useState(0);
-  const [regResult, setRegResult] = useState(null);
-  const [pairedRows, setPairedRows] = useState([{ pa: '', ga: '', pb: '', gb: '' }]);
-  const [pairedResult, setPairedResult] = useState(null);
-  const [applyInputs, setApplyInputs] = useState({ sg: subject.gla || '', cg: '', rate: '', cp: '' });
-  const [applyResult, setApplyResult] = useState(null);
+function GLAStudy({ sales, subject, setGlaNarData, glaStudyState, setGlaStudyState, setAdjustmentDefaults, adjustmentDefaults }) {
+  const state = glaStudyState || {};
+  const mtRate = state.mtRate ?? adjustmentDefaults?.mtRate ?? 0;
+  const regResult = state.regResult ?? null;
+  const pairedRows = state.pairedRows ?? [{ pa: '', ga: '', pb: '', gb: '' }];
+  const pairedResult = state.pairedResult ?? null;
+  const applyInputs = state.applyInputs ?? { sg: subject.gla || '', cg: '', rate: adjustmentDefaults?.glaRate || '', cp: '' };
+  const applyResult = state.applyResult ?? null;
+
+  function updateState(patch) {
+    setGlaStudyState(prev => ({ ...(prev || {}), ...patch }));
+  }
+
+  useEffect(() => {
+    updateState({
+      applyInputs: {
+        ...(applyInputs || {}),
+        sg: applyInputs?.sg || subject.gla || '',
+        rate: applyInputs?.rate || adjustmentDefaults?.glaRate || ''
+      }
+    });
+  }, [subject.gla, adjustmentDefaults?.glaRate]);
 
   function runRegression() {
     const pairs = sales.filter(s => !isNaN(s.gla_n) && !isNaN(s.sale_price_n) && s.gla_n > 0 && s.sale_price_n > 0).map(s => {
@@ -886,8 +997,10 @@ function GLAStudy({ sales, subject, setGlaNarData }) {
     if (pairs.length < 3) { alert('Need at least 3 sales with GLA and price data.'); return; }
     const { b, r2, n } = linReg(pairs);
     const rel = r2 >= 0.8 ? 'Strong (R²≥0.80)' : r2 >= 0.6 ? 'Moderate (R²≥0.60)' : r2 >= 0.4 ? 'Weak (R²≥0.40) — corroborate with paired sales' : 'Poor — use paired sales method';
-    setRegResult({ slope: b, r2, n, rel });
+    const next = { slope: b, r2, n, rel };
+    updateState({ regResult: next, applyInputs: { ...applyInputs, rate: b } });
     setGlaNarData({ rate: b, method: 'simple linear regression' });
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), glaRate: Number(b || 0) }));
   }
 
   function calcPaired() {
@@ -900,25 +1013,28 @@ function GLAStudy({ sales, subject, setGlaNarData }) {
     if (!rates.length) { alert('Enter at least one complete pair.'); return; }
     const avg = rates.reduce((a, b2) => a + b2, 0) / rates.length;
     const med = median(rates);
-    setPairedResult({ results, avg, med, min: Math.min(...rates), max: Math.max(...rates) });
+    const next = { results, avg, med, min: Math.min(...rates), max: Math.max(...rates) };
+    updateState({ pairedResult: next, applyInputs: { ...applyInputs, rate: med } });
     setGlaNarData({ rate: med, method: 'paired sales analysis' });
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), glaRate: Number(med || 0) }));
   }
 
   function calcApply() {
     const sg = toNum(applyInputs.sg), cg = toNum(applyInputs.cg), rate = toNum(applyInputs.rate), cp = toNum(applyInputs.cp);
     if ([sg, cg, rate, cp].some(isNaN)) { alert('Fill all fields.'); return; }
     const diff = sg - cg, dollar = diff * rate, adj = cp + dollar;
-    setApplyResult({ diff, dollar, adj, pct: Math.abs(dollar / cp * 100) });
+    updateState({ applyResult: { diff, dollar, adj, pct: Math.abs(dollar / cp * 100) } });
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), glaRate: Number(rate || 0) }));
   }
 
   return (
     <div className="dash-page">
-      <section className="panel-card"><p className="eyebrow">Appraiser Tool</p><h1>GLA Adjustment Study</h1><p className="muted max">Extract a per-square-foot GLA adjustment using regression analysis, paired sales, or apply an existing rate. Import MLS data first to run the regression.</p></section>
+      <section className="panel-card"><p className="eyebrow">Appraiser Tool</p><h1>GLA Adjustment Study</h1><p className="muted max">Extract a per-square-foot GLA adjustment using regression analysis, paired sales, or apply an existing rate. Results now stay visible when you leave this tab and feed the Adjustment Grid while remaining editable there.</p></section>
       <section className="panel-card">
         <h2>Method 1 — Simple Linear Regression</h2>
         <p className="muted">Regresses time-adjusted sale prices against GLA for all imported sales with valid data.</p>
-        <div className="form-grid compact"><label>Market Conditions Rate (% / month)<input type="number" step="0.001" value={mtRate} onChange={e => setMtRate(toNum(e.target.value) || 0)} /></label></div>
-        <div className="btn-row"><button className="btn gold" onClick={runRegression} disabled={!sales.length}>Run GLA Regression</button>{!sales.length && <span className="muted">Import MLS data first.</span>}</div>
+        <div className="form-grid compact"><label>Market Conditions Rate (% / month)<input type="number" step="0.001" value={mtRate} onChange={e => updateState({ mtRate: toNum(e.target.value) || 0 })} /></label></div>
+        <div className="btn-row"><button className="btn gold" onClick={runRegression} disabled={!sales.length}>Run GLA Regression</button>{!sales.length && <span className="muted">Import MLS data first.</span>}{regResult && <span className="status-pill">GLA rate carried to Adjustment Grid</span>}</div>
         {regResult && <div className="metric-grid four" style={{ marginTop: 16 }}><div><b>${fmt(regResult.slope, 2)}/SF</b><span>Slope ($/SF)</span></div><div><b>{fmt(regResult.r2, 3)}</b><span>R²</span></div><div><b>{regResult.n}</b><span>Sales Used</span></div><div><b style={{ fontSize: '1rem', lineHeight: 1.3 }}>{regResult.rel}</b><span>Reliability</span></div></div>}
       </section>
       <section className="panel-card">
@@ -926,14 +1042,14 @@ function GLAStudy({ sales, subject, setGlaNarData }) {
         <p className="muted">Isolate GLA differences between matched pairs. Add pairs, then calculate.</p>
         {pairedRows.map((r, i) => (
           <div key={i} className="form-grid" style={{ marginBottom: 8 }}>
-            <label>Sale A Price ($)<input type="number" value={r.pa} onChange={e => setPairedRows(pairedRows.map((x, j) => j === i ? { ...x, pa: e.target.value } : x))} /></label>
-            <label>Sale A GLA (SF)<input type="number" value={r.ga} onChange={e => setPairedRows(pairedRows.map((x, j) => j === i ? { ...x, ga: e.target.value } : x))} /></label>
-            <label>Sale B Price ($)<input type="number" value={r.pb} onChange={e => setPairedRows(pairedRows.map((x, j) => j === i ? { ...x, pb: e.target.value } : x))} /></label>
-            <label>Sale B GLA (SF)<input type="number" value={r.gb} onChange={e => setPairedRows(pairedRows.map((x, j) => j === i ? { ...x, gb: e.target.value } : x))} /></label>
+            <label>Sale A Price ($)<input type="number" value={r.pa} onChange={e => updateState({ pairedRows: pairedRows.map((x, j) => j === i ? { ...x, pa: e.target.value } : x) })} /></label>
+            <label>Sale A GLA (SF)<input type="number" value={r.ga} onChange={e => updateState({ pairedRows: pairedRows.map((x, j) => j === i ? { ...x, ga: e.target.value } : x) })} /></label>
+            <label>Sale B Price ($)<input type="number" value={r.pb} onChange={e => updateState({ pairedRows: pairedRows.map((x, j) => j === i ? { ...x, pb: e.target.value } : x) })} /></label>
+            <label>Sale B GLA (SF)<input type="number" value={r.gb} onChange={e => updateState({ pairedRows: pairedRows.map((x, j) => j === i ? { ...x, gb: e.target.value } : x) })} /></label>
           </div>
         ))}
         <div className="btn-row">
-          <button className="btn ghost" onClick={() => setPairedRows([...pairedRows, { pa: '', ga: '', pb: '', gb: '' }])}>+ Add Pair</button>
+          <button className="btn ghost" onClick={() => updateState({ pairedRows: [...pairedRows, { pa: '', ga: '', pb: '', gb: '' }] })}>+ Add Pair</button>
           <button className="btn gold" onClick={calcPaired}>Calculate Paired Rates</button>
         </div>
         {pairedResult && <div className="metric-grid four" style={{ marginTop: 16 }}><div><b>${fmt(pairedResult.avg, 2)}/SF</b><span>Average Rate</span></div><div><b>${fmt(pairedResult.med, 2)}/SF</b><span>Median Rate</span></div><div><b>${fmt(pairedResult.min, 2)} – ${fmt(pairedResult.max, 2)}</b><span>Range</span></div><div><b>{pairedResult.results.filter(r => r.valid).length}</b><span>Valid Pairs</span></div></div>}
@@ -942,10 +1058,10 @@ function GLAStudy({ sales, subject, setGlaNarData }) {
         <h2>Apply GLA Rate</h2>
         <p className="muted">Calculate the dollar adjustment and adjusted price for a single comparable.</p>
         <div className="form-grid">
-          <label>Subject GLA (SF)<input type="number" value={applyInputs.sg} onChange={e => setApplyInputs({ ...applyInputs, sg: e.target.value })} /></label>
-          <label>Comp GLA (SF)<input type="number" value={applyInputs.cg} onChange={e => setApplyInputs({ ...applyInputs, cg: e.target.value })} /></label>
-          <label>Rate ($/SF)<input type="number" step="0.01" value={applyInputs.rate} onChange={e => setApplyInputs({ ...applyInputs, rate: e.target.value })} /></label>
-          <label>Comp Sale Price ($)<input type="number" value={applyInputs.cp} onChange={e => setApplyInputs({ ...applyInputs, cp: e.target.value })} /></label>
+          <label>Subject GLA (SF)<input type="number" value={applyInputs.sg} onChange={e => updateState({ applyInputs: { ...applyInputs, sg: e.target.value } })} /></label>
+          <label>Comp GLA (SF)<input type="number" value={applyInputs.cg} onChange={e => updateState({ applyInputs: { ...applyInputs, cg: e.target.value } })} /></label>
+          <label>Rate ($/SF)<input type="number" step="0.01" value={applyInputs.rate} onChange={e => updateState({ applyInputs: { ...applyInputs, rate: e.target.value } })} /></label>
+          <label>Comp Sale Price ($)<input type="number" value={applyInputs.cp} onChange={e => updateState({ applyInputs: { ...applyInputs, cp: e.target.value } })} /></label>
         </div>
         <div className="btn-row"><button className="btn gold" onClick={calcApply}>Apply GLA Rate</button></div>
         {applyResult && <div className="metric-grid four" style={{ marginTop: 16 }}><div><b>{fmt(applyResult.diff)} SF</b><span>GLA Difference</span></div><div><b>{fmtD(applyResult.dollar)}</b><span>Dollar Adjustment</span></div><div><b>{money(applyResult.adj)}</b><span>Adjusted Price</span></div><div><b>{fmt(applyResult.pct, 1)}%</b><span>Pct of Sale Price</span></div></div>}
@@ -1007,22 +1123,41 @@ function CompRanking({ subject, setSubject, sales, setSales, selectedComps, setS
 }
 
 // ── Site Value ────────────────────────────────────────────────────────────────
-function SiteValue() {
-  const [land, setLand] = useState([]);
-  const [imp, setImp] = useState('');
-  const [total, setTotal] = useState('');
-  const [pct, setPct] = useState(20);
-  const [ran, setRan] = useState(false);
+function SiteValue({ subject, siteValueState, setSiteValueState, setAdjustmentDefaults }) {
+  const state = siteValueState || { land: [], imp: '', total: '', pct: 20, ran: false, selectedRate: 0 };
+  const land = state.land || [];
+  const imp = state.imp ?? '';
+  const total = state.total ?? '';
+  const pct = state.pct ?? 20;
+  const ran = !!state.ran;
+  const selectedRate = state.selectedRate || 0;
+
+  function updateState(patch) {
+    setSiteValueState(prev => ({ ...(prev || {}), ...patch }));
+  }
+
   const avg = land.length ? land.reduce((a, r) => a + (Number(r.price) || 0) / (Number(r.site) || 1), 0) / land.length : 0;
   const allocation = toNum(total) && pct ? toNum(total) * pct / 100 : 0;
   const abstraction = toNum(total) && toNum(imp) ? toNum(total) - toNum(imp) : 0;
+  const allocationRate = allocation && subject.site ? allocation / Number(subject.site) : 0;
+  const abstractionRate = abstraction && subject.site ? abstraction / Number(subject.site) : 0;
+
+  function useSiteRate(rate, label) {
+    const cleanRate = Number(rate || 0);
+    updateState({ selectedRate: cleanRate, selectedRateLabel: label });
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), siteRate: cleanRate }));
+  }
+
   return (
     <div className="dash-page">
       <section className="panel-card">
         <p className="eyebrow">Appraiser Tool</p>
         <h1>Site / Land Value Support</h1>
-        <p className="muted max">Support site value using vacant land sales, allocation, and abstraction methods. Add land sales below to populate the analysis.</p>
-        <button className="btn gold" onClick={() => setRan(true)} disabled={!land.length && !toNum(total)}>Calculate Site / Land Value</button>
+        <p className="muted max">Support site value using vacant land sales, allocation, and abstraction methods. Chosen $/SF site rates now carry into the Adjustment Grid while remaining editable there.</p>
+        <div className="btn-row">
+          <button className="btn gold" onClick={() => updateState({ ran: true })} disabled={!land.length && !toNum(total)}>Calculate Site / Land Value</button>
+          {selectedRate ? <span className="status-pill">Site rate carried: ${fmt(selectedRate, 2)}/SF</span> : null}
+        </div>
         {ran && (
           <div className="metric-grid three" style={{ marginTop: 16 }}>
             <div><b>{land.length ? `${money(avg)}/SF` : '—'}</b><span>Avg $/SF (Land Sales)</span></div>
@@ -1030,19 +1165,26 @@ function SiteValue() {
             <div><b>{abstraction ? money(abstraction) : '—'}</b><span>Abstraction Indication</span></div>
           </div>
         )}
+        {ran && (
+          <div className="btn-row" style={{ marginTop: 16 }}>
+            {land.length > 0 && <button className="btn ghost" onClick={() => useSiteRate(avg, 'Land Sale Average')}>Use Land Avg in Grid</button>}
+            {allocationRate > 0 && <button className="btn ghost" onClick={() => useSiteRate(allocationRate, 'Allocation Rate')}>Use Allocation $/SF in Grid</button>}
+            {abstractionRate > 0 && <button className="btn ghost" onClick={() => useSiteRate(abstractionRate, 'Abstraction Rate')}>Use Abstraction $/SF in Grid</button>}
+          </div>
+        )}
       </section>
       <section className="table-card">
-        <div className="card-head"><h2>Vacant Land Sales</h2><button onClick={() => { setRan(false); setLand([...land, { price: '', site: '' }]); }}>+ Add Sale</button></div>
+        <div className="card-head"><h2>Vacant Land Sales</h2><button onClick={() => updateState({ ran: false, land: [...land, { price: '', site: '' }] })}>+ Add Sale</button></div>
         {land.length === 0 && <div className="status-banner">No land sales entered yet. Click + Add Sale to begin.</div>}
         {land.length > 0 && (
           <table>
             <thead><tr><th>Sale Price</th><th>Site SF</th><th>$/SF</th><th></th></tr></thead>
             <tbody>{land.map((r, i) => (
               <tr key={i}>
-                <td><input className="cell-input" type="number" value={r.price} onChange={e => { setRan(false); setLand(land.map((x, j) => j === i ? { ...x, price: e.target.value } : x)); }} /></td>
-                <td><input className="cell-input" type="number" value={r.site} onChange={e => { setRan(false); setLand(land.map((x, j) => j === i ? { ...x, site: e.target.value } : x)); }} /></td>
+                <td><input className="cell-input" type="number" value={r.price} onChange={e => updateState({ ran: false, land: land.map((x, j) => j === i ? { ...x, price: e.target.value } : x) })} /></td>
+                <td><input className="cell-input" type="number" value={r.site} onChange={e => updateState({ ran: false, land: land.map((x, j) => j === i ? { ...x, site: e.target.value } : x) })} /></td>
                 <td>{r.price && r.site ? `${money((Number(r.price) || 0) / (Number(r.site) || 1))}/SF` : '—'}</td>
-                <td><button className="btn ghost small" onClick={() => setLand(land.filter((_, j) => j !== i))}>✕</button></td>
+                <td><button className="btn ghost small" onClick={() => updateState({ land: land.filter((_, j) => j !== i) })}>✕</button></td>
               </tr>
             ))}</tbody>
           </table>
@@ -1050,10 +1192,11 @@ function SiteValue() {
       </section>
       <section className="panel-card">
         <h2>Allocation / Abstraction Methods</h2>
+        <p className="muted" style={{ marginBottom: 12 }}>If subject site area is filled in Subject Property, allocation and abstraction can also be converted to a $/SF site rate for the Adjustment Grid.</p>
         <div className="form-grid">
-          <label>Total Property Value<input type="number" value={total} onChange={e => { setRan(false); setTotal(e.target.value); }} /></label>
-          <label>Allocation % to Site<input type="number" value={pct} onChange={e => { setRan(false); setPct(Number(e.target.value)); }} /></label>
-          <label>Improvement Value Estimate<input type="number" value={imp} onChange={e => { setRan(false); setImp(e.target.value); }} /></label>
+          <label>Total Property Value<input type="number" value={total} onChange={e => updateState({ ran: false, total: e.target.value })} /></label>
+          <label>Allocation % to Site<input type="number" value={pct} onChange={e => updateState({ ran: false, pct: Number(e.target.value) })} /></label>
+          <label>Improvement Value Estimate<input type="number" value={imp} onChange={e => updateState({ ran: false, imp: e.target.value })} /></label>
         </div>
       </section>
     </div>
@@ -1061,10 +1204,24 @@ function SiteValue() {
 }
 
 // ── Adjustment Grid ───────────────────────────────────────────────────────────
-function Adjustments({ selectedComps, sales, subject, adjRows, setAdjRows }) {
-  const [mtRate, setMtRate] = useState(0); const [glaRate, setGlaRate] = useState(0); const [siteRate, setSiteRate] = useState(0); const [ageRate, setAgeRate] = useState(0); const [condRate, setCondRate] = useState(0); const [qualRate, setQualRate] = useState(0); const [topN, setTopN] = useState(6); const [built, setBuilt] = useState(false);
+function Adjustments({ selectedComps, sales, subject, adjRows, setAdjRows, adjustmentDefaults, setAdjustmentDefaults }) {
+  const defaults = adjustmentDefaults || {};
+  const mtRate = defaults.mtRate ?? 0;
+  const glaRate = defaults.glaRate ?? 0;
+  const siteRate = defaults.siteRate ?? 0;
+  const ageRate = defaults.ageRate ?? 0;
+  const condRate = defaults.condRate ?? 0;
+  const qualRate = defaults.qualRate ?? 0;
+  const topN = defaults.topN ?? 6;
+  const built = !!defaults.built;
+
+  function updateDefault(key, value) {
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), [key]: value }));
+  }
+
   const selectedSet = new Set(selectedComps);
   const selectedRows = sales.filter(s => { const key = s._id ?? s.address; return selectedSet.has(key); }).sort((a, b) => (b._score || 0) - (a._score || 0));
+
   function build() {
     const useSales = selectedRows.length ? selectedRows.slice(0, topN) : sales.slice(0, topN);
     const rows = useSales.map((s, i) => {
@@ -1080,29 +1237,46 @@ function Adjustments({ selectedComps, sales, subject, adjRows, setAdjRows }) {
       const totalAdj = timeAdj + glaAdj + siteAdj + ageAdj + condAdj + qualAdj;
       return { rank: i + 1, address: s.address || '', price: s.sale_price_n || 0, date: s.sale_date || '', score: s._score || 0, timeAdj, glaAdj, siteAdj, ageAdj, condAdj, qualAdj, otherAdj: 0, totalAdj, adjusted: (s.sale_price_n || 0) + totalAdj, note: '' };
     });
-    setAdjRows(rows); setBuilt(true);
+    setAdjRows(rows);
+    setAdjustmentDefaults(prev => ({ ...(prev || {}), built: true }));
   }
-  function editAdj(i, k, v) { const next = adjRows.map((r, j) => { if (j !== i) return r; const updated = { ...r, [k]: toNum(v) || 0 }; updated.totalAdj = updated.timeAdj + updated.glaAdj + updated.siteAdj + updated.ageAdj + updated.condAdj + updated.qualAdj + updated.otherAdj; updated.adjusted = updated.price + updated.totalAdj; return updated; }); setAdjRows(next); }
+
+  function editAdj(i, k, v) {
+    const next = adjRows.map((r, j) => {
+      if (j !== i) return r;
+      const updated = { ...r, [k]: toNum(v) || 0 };
+      updated.totalAdj = updated.timeAdj + updated.glaAdj + updated.siteAdj + updated.ageAdj + updated.condAdj + updated.qualAdj + updated.otherAdj;
+      updated.adjusted = updated.price + updated.totalAdj;
+      return updated;
+    });
+    setAdjRows(next);
+  }
+
   return (
     <div className="dash-page">
       <section className="panel-card">
         <p className="eyebrow">Appraiser Tool</p>
         <h1>Adjustment Grid</h1>
-        <p className="muted max">Select comps in Comp Ranking then build the grid. Rate inputs pre-calculate each adjustment — all cells are editable after build.</p>
+        <p className="muted max">Select comps in Comp Ranking then build the grid. Market, GLA, and site rates carry over from prior studies, but appraisers can still edit them here before building the grid.</p>
         <div className="form-grid">
-          <label>Market Conditions (% / month)<input type="number" step="0.001" value={mtRate} onChange={e => setMtRate(toNum(e.target.value) || 0)} /></label>
-          <label>GLA Rate ($/SF)<input type="number" step="0.01" value={glaRate} onChange={e => setGlaRate(toNum(e.target.value) || 0)} /></label>
-          <label>Site Rate ($/SF)<input type="number" step="0.01" value={siteRate} onChange={e => setSiteRate(toNum(e.target.value) || 0)} /></label>
-          <label>Age Rate ($/year)<input type="number" step="1" value={ageRate} onChange={e => setAgeRate(toNum(e.target.value) || 0)} /></label>
-          <label>Condition Rate ($/rating step)<input type="number" step="100" value={condRate} onChange={e => setCondRate(toNum(e.target.value) || 0)} /></label>
-          <label>Quality Rate ($/rating step)<input type="number" step="100" value={qualRate} onChange={e => setQualRate(toNum(e.target.value) || 0)} /></label>
-          <label>Top N Comps<input type="number" min="1" max="12" value={topN} onChange={e => setTopN(Number(e.target.value) || 6)} /></label>
+          <label>Market Conditions (% / month)<input type="number" step="0.001" value={mtRate} onChange={e => updateDefault('mtRate', toNum(e.target.value) || 0)} /></label>
+          <label>GLA Rate ($/SF)<input type="number" step="0.01" value={glaRate} onChange={e => updateDefault('glaRate', toNum(e.target.value) || 0)} /></label>
+          <label>Site Rate ($/SF)<input type="number" step="0.01" value={siteRate} onChange={e => updateDefault('siteRate', toNum(e.target.value) || 0)} /></label>
+          <label>Age Rate ($/year)<input type="number" step="1" value={ageRate} onChange={e => updateDefault('ageRate', toNum(e.target.value) || 0)} /></label>
+          <label>Condition Rate ($/rating step)<input type="number" step="100" value={condRate} onChange={e => updateDefault('condRate', toNum(e.target.value) || 0)} /></label>
+          <label>Quality Rate ($/rating step)<input type="number" step="100" value={qualRate} onChange={e => updateDefault('qualRate', toNum(e.target.value) || 0)} /></label>
+          <label>Top N Comps<input type="number" min="1" max="12" value={topN} onChange={e => updateDefault('topN', Number(e.target.value) || 6)} /></label>
+        </div>
+        <div className="btn-row" style={{ marginTop: 8 }}>
+          {mtRate !== 0 && <span className="status-pill">Market rate loaded</span>}
+          {glaRate !== 0 && <span className="status-pill">GLA rate loaded</span>}
+          {siteRate !== 0 && <span className="status-pill">Site rate loaded</span>}
         </div>
         {selectedRows.length > 0
           ? <div className="selected-comps-row">{selectedRows.slice(0, topN).map(s => <span key={s._id}>{s.address}</span>)}</div>
           : <div className="status-banner">No comps selected. Select comps in Comp Ranking for best results, or the grid will use the top {topN} ranked sales.</div>}
         <div className="btn-row" style={{ marginTop: 16 }}>
-          <button className="btn gold" onClick={build} disabled={!sales.length}>Build Adjustment Grid</button>
+          <button className="btn gold" onClick={build} disabled={!sales.length}>Build / Rebuild Adjustment Grid</button>
           {!sales.length && <span className="muted">Import MLS data first.</span>}
           {built && <span className="status-pill">Grid built — cells are editable</span>}
         </div>
