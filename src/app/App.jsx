@@ -1225,7 +1225,7 @@ function CompRanking({ subject, setSubject, sales, setSales, selectedComps, setS
         <div className="muted" style={{ marginTop: 8 }}>Weight total: {Object.values(w).reduce((a, b) => a + b, 0)}</div>
       </section>
       <section className="rank-grid">
-        {ranked.slice(0, 12).map((s, i) => (
+        {ranked.map((s, i) => (
           <article className={`rank-card ${selectedSet.has(s._key) ? 'selected' : ''}`} key={s._key}>
             <div className="rank-num">#{i + 1}</div>
             <div>
