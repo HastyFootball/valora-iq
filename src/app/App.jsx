@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import '../Styles/globals.css';
+import '../styles/globals.css';
 import { supabase } from '../lib/supabaseClient';
 
 // ── Router ──────────────────────────────────────────────────────────────────
