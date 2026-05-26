@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import '../styles/globals.css';
+import '../Styles/globals.css';
 import { supabase } from '../lib/supabaseClient';
 
 // ── Router ──────────────────────────────────────────────────────────────────
@@ -2507,7 +2507,7 @@ function Panel({ title, eyebrow, copy }) {
   );
 }
 
-// ── Chart styles ──────────────────────────────────────────────────────────────
+// ── Chart  ──────────────────────────────────────────────────────────────
 const chartStyle = `.market-line-wrap{width:100%;overflow-x:auto;margin:1rem 0}.market-line-svg{width:100%;min-width:520px;height:260px}.market-line-svg line{stroke:rgba(255,255,255,.18);stroke-width:1}.market-line-svg path{fill:none;stroke:var(--cyan);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.market-line-svg circle{fill:var(--gold);stroke:var(--navy);stroke-width:2}.market-line-svg text{fill:var(--muted);font-size:10px}`;
 
 // ── App root ──────────────────────────────────────────────────────────────────
