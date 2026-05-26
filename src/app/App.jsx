@@ -1025,32 +1025,125 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
     return found ? `${found[0]} ${found[1]}` : v || '—';
   };
 
-  const sampleSize = Math.max(5, Math.ceil((sales.length || 0) * 0.1));
+  const sampleSize = Math.min(
+    sales.length,
+    Math.max(6, Math.ceil((sales.length || 0) * 0.18))
+  );
+
+  function percentileRank(sortedVals, value) {
+    if (!sortedVals.length || value === null || value === undefined || isNaN(value)) return 0.5;
+    const idx = sortedVals.findIndex(v => value <= v);
+    if (idx < 0) return 1;
+    return sortedVals.length === 1 ? 0.5 : idx / (sortedVals.length - 1);
+  }
+
+  function nearestKnownRating(sale, knownSales, fieldPrefix) {
+    const candidates = knownSales
+      .filter(k => ratingNum(k[fieldPrefix]) && k._reviewKey !== sale._reviewKey)
+      .map(k => ({ sale: k, score: similarityScore(sale, k) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    if (!candidates.length) return null;
+    const nums = candidates.map(c => ratingNum(c.sale[fieldPrefix])).filter(Boolean);
+    return nums.length ? median(nums) : null;
+  }
 
   const flagged = useMemo(() => {
-    return [...sales]
-      .map((s, i) => {
-        const key = s._id ?? `${s.address || 'sale'}-${i}`;
-        const missing = !s.quality || !s.condition;
-        const qn = ratingNum(subject.qual);
-        const cn = ratingNum(subject.cond);
-        const qnum = ratingNum(s.quality);
-        const cnum = ratingNum(s.condition);
-        const qdiff = qn && qnum ? Math.abs(qnum - qn) : 0;
-        const cdiff = cn && cnum ? Math.abs(cnum - cn) : 0;
-        const risk = missing ? 95 : qdiff > 1 || cdiff > 1 ? 80 : 35;
+    const validSales = sales.map((s, i) => ({
+      ...s,
+      _reviewKey: s._id ?? `${s.address || 'sale'}-${i}`
+    }));
 
-        return {
-          ...s,
-          _reviewKey: key,
-          _risk: risk,
-          _suggestQ: s.quality || subject.qual || 'Q3',
-          _suggestC: s.condition || subject.cond || 'C3',
-          _reason: missing ? 'Needs review' : 'Check rating'
-        };
-      })
+    const knownRated = validSales.filter(s => ratingNum(s.quality) || ratingNum(s.condition));
+    const priceVals = validSales.map(s => s.sale_price_n).filter(v => !isNaN(v)).sort((a, b) => a - b);
+    const glaVals = validSales.map(s => s.gla_n).filter(v => !isNaN(v)).sort((a, b) => a - b);
+    const yearVals = validSales.map(s => s.year_built_n).filter(v => !isNaN(v)).sort((a, b) => a - b);
+    const siteVals = validSales.map(s => s.site_sf_n).filter(v => !isNaN(v)).sort((a, b) => a - b);
+    const subjectQ = ratingNum(subject.qual);
+    const subjectC = ratingNum(subject.cond);
+
+    const scored = validSales.map(s => {
+      const qNum = ratingNum(s.quality);
+      const cNum = ratingNum(s.condition);
+      const missingQ = !qNum;
+      const missingC = !cNum;
+      const pricePct = percentileRank(priceVals, s.sale_price_n);
+      const glaPct = percentileRank(glaVals, s.gla_n);
+      const yearPct = percentileRank(yearVals, s.year_built_n);
+      const sitePct = percentileRank(siteVals, s.site_sf_n);
+      const profileSpread = Math.max(pricePct, glaPct, yearPct, sitePct) - Math.min(pricePct, glaPct, yearPct, sitePct);
+      const edgeProfile = [pricePct, glaPct, yearPct, sitePct].some(v => v <= 0.12 || v >= 0.88);
+      const qFromNearest = nearestKnownRating(s, knownRated, 'quality');
+      const cFromNearest = nearestKnownRating(s, knownRated, 'condition');
+      const qConflict = qNum && qFromNearest ? Math.abs(qNum - qFromNearest) : 0;
+      const cConflict = cNum && cFromNearest ? Math.abs(cNum - cFromNearest) : 0;
+      const subjectConflict = Math.max(
+        qNum && subjectQ ? Math.abs(qNum - subjectQ) : 0,
+        cNum && subjectC ? Math.abs(cNum - subjectC) : 0
+      );
+      const possibleBoundary =
+        (qFromNearest && !missingQ && Math.abs(qNum - qFromNearest) >= 0.75) ||
+        (cFromNearest && !missingC && Math.abs(cNum - cFromNearest) >= 0.75) ||
+        profileSpread >= 0.55;
+
+      let risk = 20;
+      if (missingQ || missingC) risk += 45;
+      if (qConflict >= 1 || cConflict >= 1) risk += 32;
+      if (subjectConflict >= 1) risk += 18;
+      if (edgeProfile) risk += 14;
+      if (possibleBoundary) risk += 10;
+      if (!s.gla_n || !s.sale_price_n) risk += 8;
+
+      const reasons = [];
+      if (missingQ || missingC) reasons.push('missing Q/C');
+      if (qConflict >= 1 || cConflict >= 1) reasons.push('neighbor conflict');
+      if (subjectConflict >= 1) reasons.push('differs from subject');
+      if (edgeProfile) reasons.push('edge profile');
+      if (possibleBoundary) reasons.push('rating boundary');
+      if (!reasons.length) reasons.push('representative check');
+
+      const suggestedQNum = qNum || qFromNearest || subjectQ || 3;
+      const suggestedCNum = cNum || cFromNearest || subjectC || 3;
+
+      return {
+        ...s,
+        _risk: Math.min(100, Math.round(risk)),
+        _suggestQ: `Q${Math.round(Math.max(1, Math.min(6, suggestedQNum)))}`,
+        _suggestC: `C${Math.round(Math.max(1, Math.min(6, suggestedCNum)))}`,
+        _reason: reasons.slice(0, 2).join(' + '),
+        _bucketKey: `${Math.round(pricePct * 4)}-${Math.round(glaPct * 4)}-${Math.round(yearPct * 3)}`
+      };
+    });
+
+    const picked = [];
+    const used = new Set();
+    const addPick = sale => {
+      if (!sale || used.has(sale._reviewKey) || picked.length >= sampleSize) return;
+      used.add(sale._reviewKey);
+      picked.push(sale);
+    };
+
+    scored
+      .filter(s => !ratingNum(s.quality) || !ratingNum(s.condition))
       .sort((a, b) => b._risk - a._risk)
-      .slice(0, sampleSize);
+      .forEach(addPick);
+
+    scored
+      .filter(s => s._risk >= 65)
+      .sort((a, b) => b._risk - a._risk)
+      .forEach(addPick);
+
+    const buckets = [...new Set(scored.map(s => s._bucketKey))];
+    buckets.forEach(bucket => {
+      const best = scored
+        .filter(s => s._bucketKey === bucket)
+        .sort((a, b) => b._risk - a._risk)[0];
+      addPick(best);
+    });
+
+    scored.sort((a, b) => b._risk - a._risk).forEach(addPick);
+    return picked.slice(0, sampleSize);
   }, [sales, subject.qual, subject.cond, sampleSize]);
 
   const counts = (field, prefix) =>
@@ -1159,7 +1252,7 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
       <section className="panel-card">
         <p className="eyebrow">{persona === 'appraiser' ? 'Appraiser Tool' : 'Agent/Broker Tool'}</p>
         <h1>{persona === 'appraiser' ? 'Q/C Analyzer' : 'Quality / Condition Analyzer'}</h1>
-        <p className="muted max">Review a sample of imported sales, then ValoraIQ estimates quality and condition ratings for the remaining sales based on similarity. The plain-English labels make the rating scale easier to use for both appraisers and agents.</p>
+        <p className="muted max">ValoraIQ now chooses Q/C review samples strategically: missing ratings, likely rating-boundary sales, outliers, neighbor conflicts, and representative comps across the dataset. After review, it estimates quality and condition ratings for the remaining sales based on similarity. The plain-English labels make the rating scale easier to use for both appraisers and agents.</p>
 
         <div className="btn-row">
           <button className="btn gold" onClick={() => { setRan(true); setApplyMessage(''); }}>
@@ -1187,8 +1280,8 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
         <section className="table-card">
           <div className="card-head">
             <div>
-              <h2>{sampleSize} Suggested Q/C Review Samples</h2>
-              <span>Edit the verified rating for each sample, then apply to all sales.</span>
+              <h2>{flagged.length} Smart Q/C Review Samples</h2>
+              <span>These are selected because their Q/C rating could materially change the model.</span>
             </div>
             <button className="btn gold small" onClick={applyReviewSamples}>
               Apply Q/C Rating Adjustments
@@ -1197,7 +1290,7 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
 
           <table>
             <thead>
-              <tr><th>Sale</th><th>Current Q/C</th><th>Suggested</th><th>Verified Q</th><th>Verified C</th><th>Flag</th></tr>
+              <tr><th>Sale</th><th>Current Q/C</th><th>Suggested</th><th>Verified Q</th><th>Verified C</th><th>Why selected</th><th>Risk</th></tr>
             </thead>
             <tbody>
               {flagged.map(s => {
@@ -1224,6 +1317,7 @@ function QCAnalyzer({ persona = 'appraiser', sales, setSales, subject }) {
                       </select>
                     </td>
                     <td><em className={s._risk >= 70 ? 'flag-warn' : 'flag-good'}>{s._reason}</em></td>
+                    <td><b>{s._risk}</b>/100</td>
                   </tr>
                 );
               })}
