@@ -779,7 +779,6 @@ function AppraiserHome({ sales, projects = [], selectedComps = [], adjRows = [],
       </section>
       <WorkflowProgress persona="appraiser" sales={sales} selectedComps={selectedComps} adjRows={adjRows} marketStudyState={marketStudyState} currentProjectName={currentProjectName} setRoute={setRoute} />
       <ProjectIntelligencePanel persona="appraiser" sales={sales} selectedComps={selectedComps} adjRows={adjRows} marketStudyState={marketStudyState} setRoute={setRoute} />
-      <SubscriptionReadinessPanel setRoute={setRoute} />
       <div className="kpi-row">
         <KPI label="Saved Projects" value={projectCount} helper="in your account" />
         <KPI label="Imported Sales" value={sales.length} helper="current project" />
@@ -810,7 +809,6 @@ function AgentHome({ sales, projects = [], selectedComps = [], currentProjectNam
       </section>
       <WorkflowProgress persona="agent" sales={sales} selectedComps={selectedComps} adjRows={[]} currentProjectName={currentProjectName} setRoute={setRoute} />
       <ProjectIntelligencePanel persona="agent" sales={sales} selectedComps={selectedComps} adjRows={[]} setRoute={setRoute} />
-      <SubscriptionReadinessPanel setRoute={setRoute} />
       <div className="kpi-row">
         <KPI label="Saved Projects" value={projects.length} helper="in your account" />
         <KPI label="Imported Records" value={sales.length} helper="current project" />
