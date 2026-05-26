@@ -766,41 +766,6 @@ function ProjectIntelligencePanel({ persona, sales = [], selectedComps = [], adj
   );
 }
 
-
-function SubscriptionReadinessPanel({ setRoute }) {
-  return (
-    <section className="subscription-ready-grid">
-      <article className="subscription-card spotlight">
-        <p className="eyebrow">Subscription Ready Layer</p>
-        <h2>What sells the product</h2>
-        <p>ValoraIQ is strongest when users see professional output, clear methodology, and guided next steps. This dashboard now highlights trust, workflow progress, warnings, and export readiness.</p>
-        <div className="btn-row">
-          <button className="btn gold small" onClick={() => setRoute('Export Workfile')}>Preview Export</button>
-          <button className="btn ghost small" onClick={() => setRoute('Walkthrough')}>Open Walkthrough</button>
-        </div>
-      </article>
-      <article className="subscription-card">
-        <p className="eyebrow">Trust Signals</p>
-        <ul className="premium-checklist">
-          <li>Source/date basis shown</li>
-          <li>Methodology notes included</li>
-          <li>Professional judgment disclaimer</li>
-          <li>Editable narratives and exports</li>
-        </ul>
-      </article>
-      <article className="subscription-card">
-        <p className="eyebrow">Conversion Features</p>
-        <ul className="premium-checklist">
-          <li>Demo project for first-time users</li>
-          <li>Guided workflow and project health</li>
-          <li>Smart warnings and confidence score</li>
-          <li>Premium comp/market visual system</li>
-        </ul>
-      </article>
-    </section>
-  );
-}
-
 function AppraiserHome({ sales, projects = [], selectedComps = [], adjRows = [], marketStudyState = {}, currentProjectName = '', setRoute, newProject, loadDemoProject, openProject, deleteProject }) {
   const projectCount = projects.length;
   const currentLabel = currentProjectName || (sales.length ? 'Unsaved Project' : 'No project open');
