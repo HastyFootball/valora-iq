@@ -667,7 +667,26 @@ function Workspace({ persona, tab, setRoute, subject, setSubject, sales, setSale
   if (tab === 'Export Workfile') return <ExportWorkfile subject={subject} sales={sales} adjRows={adjRows} glaNarData={glaNarData} mtNarData={mtNarData} saveProject={saveProject} />;
   if (tab === 'Pricing Strategy') return <PricingStrategy sales={sales} selectedComps={selectedComps} subject={subject} />;
   if (tab === 'Seller Net Sheet') return <SellerNet />;
-  if (tab.includes('Presentation') || tab === 'CMA Export') return <ExportLike title={tab} items={['Pricing snapshot', 'Active/pending/sold summary', 'Selected comps', 'Seller net sheet', 'Talking points']} />;
+  if (tab === 'Listing Presentation') {
+  return (
+    <ListingPresentationExport
+      subject={subject}
+      sales={sales}
+      selectedComps={selectedComps}
+    />
+  );
+}
+
+if (tab === 'CMA Export') {
+  return (
+    <CMAExport
+      subject={subject}
+      sales={sales}
+      selectedComps={selectedComps}
+      adjRows={adjRows}
+    />
+  );
+}
   if (tab.includes('Photos')) return <Photos persona={persona} />;
   if (tab === 'AI Assistant') {
     setRoute('Dashboard');
@@ -2428,7 +2447,7 @@ function ExportWorkfile({ subject, sales, adjRows, glaNarData, mtNarData, savePr
         <p className="muted max">Save the project to your cloud account, download a JSON workfile, or print a clean PDF for your appraisal workfile.</p>
         <div className="btn-row">
           <button className="btn gold" onClick={saveProject}>Save Project to Cloud</button>
-          <button className="btn ghost" onClick={downloadJSON}>Download JSON ⇩</button>
+          <p className="muted max">   Save the project to your cloud account or generate a professional PDF workfile for appraisal support and review. </p>
         </div>
         <div className="status-banner" style={{ marginTop: 12 }}>JSON exports contain subject and sales data — store like any confidential workfile. Use Save Project to Cloud to preserve your work across devices.</div>
       </section>
